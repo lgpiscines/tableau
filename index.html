@@ -205,6 +205,23 @@ a{color:var(--bleu);text-decoration:none}
 .choix button.actif{background:var(--bleu);border-color:var(--bleu);color:#fff}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.vu{opacity:.95}
+.bandeau-edition{display:none;align-items:center;gap:10px;border-radius:18px;padding:10px 12px;margin-bottom:12px;position:sticky;top:calc(env(safe-area-inset-top) + 6px);z-index:25}
+.bandeau-edition>div{flex:1;min-width:0}.bandeau-edition .sous{display:block;font-size:12px}
+body.edition .bandeau-edition{display:flex}
+body.edition .tuile{animation:tremble .3s ease-in-out infinite alternate;cursor:default}
+body.edition .tuile:nth-child(2n){animation-delay:-.15s;animation-direction:alternate-reverse}
+body.edition .tuile:active{transform:none}
+@keyframes tremble{from{transform:rotate(-.7deg)}to{transform:rotate(.7deg)}}
+.ctl{display:none;position:absolute;inset:auto 8px 8px 8px;z-index:5;gap:6px;justify-content:space-between}
+body.edition .ctl{display:flex}
+.ctl button{flex:1;height:34px;border:0;border-radius:11px;font-size:16px;font-weight:700;background:var(--verre-fort);box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:pointer;color:var(--texte)}
+.ctl button[disabled]{opacity:.3}
+.ctl .moins{color:var(--rouge)}
+body.edition .tuile .t-corps{opacity:.35}
+.masquees{display:none;flex-wrap:wrap;gap:8px;margin-top:12px}
+body.edition .masquees{display:flex}
+.masquees .sous{width:100%}
+.masquees button{border:0;border-radius:999px;padding:8px 12px;font-weight:600;background:var(--verre-fort);box-shadow:var(--ombre);cursor:pointer}
 .pied{color:var(--doux);font-size:12px;text-align:center;margin-top:16px}
 .connexion{max-width:380px;margin:12vh auto 0;padding:24px 20px;text-align:center;border-radius:26px}
 .connexion img{width:72px;height:72px;border-radius:18px;box-shadow:var(--ombre)}
@@ -219,6 +236,7 @@ a{color:var(--bleu);text-decoration:none}
   <symbol id="i-maj" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
   <symbol id="i-sortie" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-crayon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-carte" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></symbol>
   <symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
@@ -243,6 +261,7 @@ a{color:var(--bleu);text-decoration:none}
     <div class="haut">
       <div><h1 id="salut">Bonjour Maître</h1><div class="date" id="date"></div></div>
       <div class="actions">
+        <button class="rond" id="personnaliser" title="Personnaliser les tuiles"><svg><use href="#i-crayon"/></svg></button>
         <button class="rond" id="rafraichir" title="Actualiser"><svg><use href="#i-maj"/></svg></button>
         <button class="rond" id="deconnexion" title="Se déconnecter"><svg><use href="#i-sortie"/></svg></button>
       </div>
@@ -252,7 +271,12 @@ a{color:var(--bleu);text-decoration:none}
     <div class="segment"><button data-espace="travail" class="actif">Travail</button><button data-espace="maison">Maison</button></div>
   </section>
   <div class="pastilles" id="pastilles"></div>
+  <div class="bandeau-edition verre" id="bandeau-edition">
+    <div><b>Personnaliser</b><span class="sous">◀ ▶ déplacer · ⇔ petite / grande · − masquer</span></div>
+    <button class="btn plein" id="fin-edition">Terminé</button>
+  </div>
   <div class="grille" id="tuiles"></div>
+  <div class="masquees" id="masquees"></div>
   <p class="pied">Touchez une tuile pour le détail. Les données viennent du PC (toutes les 5 min quand il est allumé) ;<br>météo, mémos et courses sont en direct.</p>
 </div>
 
@@ -286,7 +310,8 @@ const initiales = n => (n||"?").replace(/^(mr|mme|m\.)\s+/i,"").split(/[\s\-–]
 function toast(t){ const e = $("#toast"); e.textContent = t; e.classList.add("vu"); clearTimeout(e._t); e._t = setTimeout(()=>e.classList.remove("vu"), 2200); }
 
 const S = { espace: localStorage.getItem("tb-espace") || "travail", snap:{}, memos:[], courses:null, foyer:null, meteo:null, plus:new Set(),
-  feuille:null, carte:false, photoIdx:0 };
+  feuille:null, carte:false, photoIdx:0, edition:false,
+  dispo: (() => { try { return JSON.parse(localStorage.getItem("tb-dispo") || "null"); } catch(e){ return null; } })() };
 const B = cle => S.snap[cle]?.donnees?.donnees ?? S.snap[cle]?.donnees;   // contenu d'un bloc envoyé par le PC
 
 /* ================================================================ Données */
@@ -299,6 +324,7 @@ async function charger(){
     ]);
     if (snap.error) throw snap.error;
     S.snap = Object.fromEntries((snap.data||[]).map(r => [r.cle, r]));
+    if (S.snap["dispo-telephone"]?.donnees) { S.dispo = S.snap["dispo-telephone"].donnees; try { localStorage.setItem("tb-dispo", JSON.stringify(S.dispo)); } catch(e){} }
     S.memos = memos.data || [];
     rendre();
     await Promise.all([chargerMeteo(), chargerCourses()]);
@@ -504,8 +530,6 @@ const RUBRIQUES = {
             <div class="p"><span class="t">${echap(c.nom)}</span>${c.adresse?`<span class="s">${echap(c.adresse)}</span>`:""}</div></div>`).join(""), 3, "Rien de prévu ces deux semaines.");
         return tour + bloc("Planning · 14 jours", plan);
       } },
-    { id:"devis", titre:"Devis", e:"✅", c:"var(--vert)", detail: () => RUB("achete"),
-      apercu: () => { const d = B("lg"), af = S.memos.filter(m=>m.type==="devis").length; return d ? `<div class="gros">${d.devis_sans_reponse}</div><div class="leg">sans réponse · ${eurosCourt(d.devis_sans_reponse_total)}<br><b>${af}</b> devis à faire</div>` : `<div class="leg">—</div>`; } },
     { id:"chlore", nom:"Y'a plus de chlore ?", emo:"🧪", c:"var(--cyan)", resume: () => { const s = B("local")?.stock || []; const bas = s.filter(p=>p.quantite!==null && p.quantite<=p.seuil).length;
         return `${bas ? pluriel(bas,"produit")+" sous le seuil · " : ""}${S.memos.filter(m=>m.type==="commandes").length} à commander`; },
       rendu: () => {
@@ -602,6 +626,8 @@ const TUILES = {
     { id:"point", titre:"Point du matin", e:"☕", c:"var(--orange)", l:true, detail: pointDetail,
       apercu: () => { const p = B("point"); const t = p?.existe ? tachesPoint(p.a_faire) : [];
         return t.length ? t.slice(0,3).map((x,i)=>miniL(echap(x.titre), "", `<span class="num" style="width:20px;height:20px;font-size:11px">${i+1}</span>`)).join("") : `<div class="leg">Rien d'urgent ce matin.</div>`; } },
+    { id:"devis", titre:"Devis", e:"✅", c:"var(--vert)", detail: () => RUB("achete"),
+      apercu: () => { const d = B("lg"), af = S.memos.filter(m=>m.type==="devis").length; return d ? `<div class="gros">${d.devis_sans_reponse}</div><div class="leg">sans réponse · ${eurosCourt(d.devis_sans_reponse_total)}<br><b>${af}</b> devis à faire</div>` : `<div class="leg">—</div>`; } },
     { id:"chlore", titre:"Stock & commandes", e:"🧪", c:"var(--cyan)", detail: () => RUB("chlore"),
       apercu: () => { const s = B("local")?.stock || [], bas = s.filter(p=>p.quantite!==null && p.quantite<=p.seuil).length, c = S.memos.filter(m=>m.type==="commandes").length;
         return `<div class="gros">${c}</div><div class="leg">à commander${bas ? ` · <b>${bas}</b> produit(s) sous le seuil` : ""}</div>`; } },
@@ -691,9 +717,28 @@ function etatPc(){
     : `<span class="etat-pc" style="--c:var(--orange)">PC éteint · données de ${quand(vu)}</span>`;
 }
 const titreDe = t => typeof t.titre === "function" ? t.titre() : t.titre;
-function tuileHtml(t){
+/* Disposition choisie : ordre, taille (l = pleine largeur) et tuiles masquées, par espace. */
+function disposition(espace){
+  const base = TUILES[espace], d = (S.dispo && S.dispo[espace]) || [];
+  const l = d.filter(x=>base.some(t=>t.id===x.id)).map(x=>({...x}));
+  base.forEach((t,i) => { if (!l.some(x=>x.id===t.id)) l.splice(Math.min(i, l.length), 0, {id:t.id, l:!!t.l, cache:false}); });
+  return l;
+}
+async function sauverDispo(){
+  try { localStorage.setItem("tb-dispo", JSON.stringify(S.dispo)); } catch(e){}
+  try { const u = (await sb.auth.getUser()).data.user;
+    const r = await sb.from("tableau_instantane").upsert({user_id:u.id, cle:"dispo-telephone", donnees:S.dispo, maj:new Date().toISOString()}, {onConflict:"user_id,cle"});
+    if (r.error) throw r.error; } catch(e){ toast("Disposition gardée sur ce téléphone seulement"); }
+}
+function changerDispo(fn){ const l = disposition(S.espace); fn(l); S.dispo = {...(S.dispo||{}), [S.espace]: l}; rendre(); sauverDispo(); }
+function tuileHtml(t, i, n){
+  const ctl = `<div class="ctl"><button data-bouger="-1" data-id="${t.id}" ${i===0?"disabled":""}>◀</button><button data-taille="${t.id}">⇔</button>
+    <button data-bouger="1" data-id="${t.id}" ${i===n-1?"disabled":""}>▶</button><button class="moins" data-masquer="${t.id}">−</button></div>`;
+  return tuileBase(t).replace(/<\/div>$/, ctl + "</div>");
+}
+function tuileBase(t){
   if (t.photo){ const p = B("photos")?.photos || [];
-    return `<div class="tuile l photo" style="--c:${t.c}" data-tuile="${t.id}">${p.length ? `<img id="photo-tuile" src="${echap(p[S.photoIdx % p.length])}" alt="" onerror="this.style.opacity=0">` : ""}
+    return `<div class="tuile ${t.l?"l":""} photo" style="--c:${t.c}" data-tuile="${t.id}">${p.length ? `<img id="photo-tuile" src="${echap(p[S.photoIdx % p.length])}" alt="" onerror="this.style.opacity=0">` : ""}
       <div class="t-tete"><span class="t-ico">${t.e}</span><span class="t-titre">${p.length ? `${echap(titreDe(t))} · ${p.length} photos` : "Album non branché"}</span></div></div>`; }
   let corps = ""; try { corps = t.apercu(); } catch(e){ corps = `<div class="leg">—</div>`; }
   return `<div class="tuile ${t.l?"l":""}" style="--c:${t.c}" data-tuile="${t.id}"><span class="fili">${t.e}</span>
@@ -718,7 +763,12 @@ function rendre(){
   $("#infos").innerHTML = infosJour();
   $$(".segment button").forEach(b=>b.classList.toggle("actif", b.dataset.espace===S.espace));
   $("#pastilles").innerHTML = pastilles();
-  $("#tuiles").innerHTML = TUILES[S.espace].map(tuileHtml).join("");
+  const dispo = disposition(S.espace), visibles = dispo.filter(x=>!x.cache);
+  const def = id => ({...TUILES[S.espace].find(t=>t.id===id)});
+  $("#tuiles").innerHTML = visibles.map((x,i) => tuileHtml({...def(x.id), l:x.l}, i, visibles.length)).join("");
+  const cachees = dispo.filter(x=>x.cache);
+  $("#masquees").innerHTML = cachees.length ? `<span class="sous">Tuiles masquées :</span>` + cachees.map(x=>`<button data-afficher="${x.id}">+ ${echap(titreDe(def(x.id)))}</button>`).join("") : "";
+  document.body.classList.toggle("edition", S.edition);
   if (S.feuille && $("#voile").classList.contains("ouvert")) rendreFeuille(false);
 }
 /* Diaporama de la tuile Souvenirs */
@@ -761,6 +811,12 @@ document.addEventListener("click", async e => {
   const nouv = t.closest("[data-memo-nouveau]"); if (nouv){ e.preventDefault(); return feuilleMemo(null, nouv.dataset.memoNouveau); }
   const c = t.closest("[data-course]"); if (c) return coursesCocher(c.dataset.course, c.dataset.oui==="1");
   if (t.closest("[data-carte]")){ S.carte = !S.carte; rendreFeuille(false); return; }
+  const bo = t.closest("[data-bouger]"); if (bo) return changerDispo(l => { const vis = l.filter(x=>!x.cache), i = vis.findIndex(x=>x.id===bo.dataset.id), j = i + +bo.dataset.bouger;
+    if (j<0 || j>=vis.length) return; const a = l.indexOf(vis[i]), b = l.indexOf(vis[j]); [l[a], l[b]] = [l[b], l[a]]; });
+  const ta = t.closest("[data-taille]"); if (ta) return changerDispo(l => { const x = l.find(y=>y.id===ta.dataset.taille); x.l = !x.l; });
+  const ma = t.closest("[data-masquer]"); if (ma) return changerDispo(l => { l.find(y=>y.id===ma.dataset.masquer).cache = true; });
+  const af = t.closest("[data-afficher]"); if (af) return changerDispo(l => { l.find(y=>y.id===af.dataset.afficher).cache = false; });
+  if (S.edition) return;
   const tu = t.closest("[data-tuile]"); if (tu) return ouvrirTuile(tu.dataset.tuile);
 });
 document.addEventListener("submit", async e => {
@@ -768,6 +824,8 @@ document.addEventListener("submit", async e => {
     try { await coursesAjouter(v); toast("Ajouté à la liste"); } catch(x){ toast(x.message); } }
 });
 $("#rafraichir").onclick = charger;
+$("#personnaliser").onclick = () => { S.edition = !S.edition; rendre(); if (S.edition) toast("Mode Personnaliser"); };
+$("#fin-edition").onclick = () => { S.edition = false; rendre(); toast("Disposition enregistrée"); };
 $("#deconnexion").onclick = async () => { await sb.auth.signOut(); location.reload(); };
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("#appli").classList.contains("cache")) charger(); });
 
