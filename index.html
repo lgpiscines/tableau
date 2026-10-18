@@ -650,6 +650,16 @@ const TUILES = {
         return p[0] ? `<div class="gros" style="font-size:24px">${jourLong(p[0].prochain).split(" ")[0]}</div><div class="leg">${p.filter(x=>x.prochain===p[0].prochain).map(x=>echap(x.nom)).join(" + ")}</div>` : `<div class="leg">—</div>`; } },
     { id:"courses", titre:"Courses", e:"🛒", c:"var(--bleu)", detail: () => RUB("courses"),
       apercu: () => { const r = (S.courses||[]).filter(x=>!x.checked); return `<div class="gros">${r.length}</div><div class="leg">${r.length ? r.slice(0,3).map(x=>echap(x.name)).join(", ") : "Liste vide"}</div>`; } },
+    { id:"electricite", titre:"Électricité", e:"⚡", c:"var(--bleu)", detail: detailElec,
+      apercu: () => { const e = B("boxx")?.electricite; if (!e) return `<div class="leg">Pas encore de données.</div>`;
+        return `<div class="gros">${Math.round(e.w ?? 0)} <small>W</small></div><div class="leg"><b>${(e.kwh_jour||0).toLocaleString("fr-BE")} kWh</b> · ${euros(e.euros_jour||0)} aujourd'hui</div>`; } },
+    { id:"eau", titre:"Eau", e:"💧", c:"var(--cyan)", detail: detailEau,
+      apercu: () => { const e = B("boxx")?.eau; if (!e) return `<div class="leg">Pas de capteur.</div>`;
+        return `<div class="gros">${Math.round(e.jour||0)} <small>L</small></div><div class="leg">${e.statut==="COMMISSIONING" ? "capteur en cours d'installation" : `aujourd'hui${e.debit ? ` · ${e.debit} L/min` : ""}`}</div>`; } },
+    { id:"thermostat", titre:"Thermostat", e:"🌡️", c:"var(--orange)", l:true, detail: detailThermo,
+      apercu: () => { const b = B("boxx"), th = b?.thermostat, vu = b?.thermostat_vu;
+        if (th) return `<div class="meteo-t"><span class="ic">🌡️</span><div><div class="gros">${th.temp.toLocaleString("fr-BE")}°</div><div class="leg">consigne <b>${th.consigne.toLocaleString("fr-BE")}°</b> · ${th.mode}${th.chauffe ? " · 🔥 chauffe" : ""}</div></div></div>`;
+        return `<div class="leg">${vu ? `Dernière lecture : <b>${vu.temp.toLocaleString("fr-BE")}°</b> (consigne ${vu.consigne.toLocaleString("fr-BE")}°) · ${quand(vu.le)}<br>` : ""}Accès local fermé : active-le sur la Boxx pour 2 h.</div>`; } },
     { id:"agenda", titre:"Agenda familial", e:"📅", c:"var(--rouge)", l:true, detail: () => RUB("agenda"),
       apercu: () => { const e = [...(B("calendrier")?.famille||[]), ...(B("agenda")?.evenements||[])].filter(x=>x.debut.slice(0,10)>=iso(new Date())).sort((a,b)=>a.debut.localeCompare(b.debut));
         return e.length ? e.slice(0,3).map(x=>miniL(echap(x.titre), `${jourLong(x.debut.slice(0,10))}${x.journee ? "" : " · " + x.debut.slice(11,16)}`)).join("") : `<div class="leg">Rien de prévu ces prochaines semaines.</div>`; } },
@@ -657,6 +667,31 @@ const TUILES = {
   ],
 };
 
+function detailElec(){
+  const e = B("boxx")?.electricite, h = B("boxx")?.historique || []; if (!e) return `<div class="vide">Pas encore de données de la Boxx.</div>`;
+  const heures = Object.entries(e.heures || {}).sort();
+  const max = Math.max(1, ...heures.map(x=>x[1]));
+  return bloc("Maintenant", `<div class="cartes"><div class="mini" style="--c:var(--bleu)"><b>${Math.round(e.w ?? 0)} W</b><span>en ce moment</span></div>
+      <div class="mini" style="--c:var(--indigo)"><b>${(e.kwh_jour||0).toLocaleString("fr-BE")} kWh</b><span>aujourd'hui</span></div>
+      <div class="mini" style="--c:var(--vert)"><b>${euros(e.euros_jour||0)}</b><span>à ${e.prix_kwh} €/kWh</span></div></div>`
+      + (e.kwh_estimes ? `<div class="sous" style="margin-top:6px">dont ${e.kwh_estimes.toLocaleString("fr-BE")} kWh pendant que le PC était éteint</div>` : ""))
+    + (heures.length ? bloc("Puissance moyenne par heure", heures.map(([k,v])=>`<div class="ligne"><span class="d" style="width:34px;text-align:left">${k}h</span><div class="p"><div style="height:8px;border-radius:5px;background:var(--bleu);width:${v/max*100}%"></div></div><span class="d"><b>${v} W</b></span></div>`).join("")) : "")
+    + (h.length ? bloc("Jours précédents", liste("elec-jours", [...h].reverse(), x => `<div class="ligne"><div class="p"><span class="t">${jourLong(x.jour)}</span></div><div class="d"><b>${(x.elec_wh/1000).toLocaleString("fr-BE",{maximumFractionDigits:1})} kWh</b><span class="sous">${euros(x.elec_wh/1000*(e.prix_kwh||0.35))}</span></div></div>`, 5)) : "");
+}
+function detailEau(){
+  const e = B("boxx")?.eau, h = B("boxx")?.historique || []; if (!e) return `<div class="vide">La Boxx ne voit pas de capteur d'eau.</div>`;
+  return bloc("Aujourd'hui", `<div class="cartes"><div class="mini" style="--c:var(--cyan)"><b>${Math.round(e.jour||0)} L</b><span>aujourd'hui</span></div>
+      <div class="mini" style="--c:var(--bleu)"><b>${(e.debit||0).toLocaleString("fr-BE")} L/min</b><span>${e.debit ? "de l'eau coule" : "rien ne coule"}</span></div></div>`
+      + (e.statut==="COMMISSIONING" ? `<div class="sous" style="margin-top:8px">Le capteur du compteur d'eau est encore en cours d'installation sur la Boxx.</div>` : ""))
+    + (h.length ? bloc("Jours précédents", liste("eau-jours", [...h].reverse(), x => `<div class="ligne"><div class="p"><span class="t">${jourLong(x.jour)}</span></div><div class="d"><b>${Math.round(x.eau||0)} L</b></div></div>`, 5)) : "");
+}
+function detailThermo(){
+  const b = B("boxx"), th = b?.thermostat, vu = b?.thermostat_vu;
+  return th ? bloc("Thermostat", `<div class="cartes"><div class="mini" style="--c:var(--orange)"><b>${th.temp.toLocaleString("fr-BE")}°</b><span>dans la maison</span></div>
+      <div class="mini" style="--c:var(--bleu)"><b>${th.consigne.toLocaleString("fr-BE")}°</b><span>consigne</span></div><div class="mini" style="--c:var(--violet)"><b>${echap(th.mode)}</b><span>mode</span></div></div>`)
+    : bloc("Accès local fermé", `<div class="sous">${vu ? `Dernière lecture : ${vu.temp.toLocaleString("fr-BE")}° (consigne ${vu.consigne.toLocaleString("fr-BE")}°), ${quand(vu.le)}.<br>` : ""}Sur la Boxx : Réglages → Accès local → Activer. Le thermostat s'affiche alors pendant 2 heures.</div>`)
+    + `<div class="sous" style="margin-top:10px">Les boutons pour changer la température sont sur le tableau de bord du PC (il doit être à la maison, sur le même Wi-Fi que la Boxx).</div>`;
+}
 /* Les infos importantes du jour, dans le cadre du bonjour */
 function infosJour(){
   const out = [], a = iso(new Date()), dm = new Date(); dm.setDate(dm.getDate()+1); const dem = iso(dm), h = new Date().getHours();
