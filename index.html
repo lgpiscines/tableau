@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tableau de bord</title>
+<meta name="description" content="Tableau de bord LG Piscines, version téléphone">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#f2f3f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16191f" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Tableau">
+<link rel="manifest" href="/tableau/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/tableau/icone-180.png">
+<link rel="icon" href="/tableau/icone-180.png">
+<script>
+  // Netlify ajoute un badge « Powered by Netlify » à chaque page : on le masque.
+  try { localStorage.setItem('nl-hud:public:v1','hidden'); localStorage.setItem('nl-hud:owner-private:v1','hidden'); } catch(e) {}
+</script>
+<style>
+:root{
+  --fond:#f2f3f8;--carte:#ffffff;--carte-2:#f6f7fb;--texte:#14161c;--doux:#6b7280;--tres-doux:#9aa1ad;--ligne:rgba(20,22,28,.08);
+  --bleu:#0a84ff;--vert:#30b85a;--orange:#ff9500;--rouge:#ff3b30;--violet:#8e5cf7;--indigo:#5e5ce6;--rose:#ff2d75;--cyan:#22b8cf;
+  --menthe:#14b8a6;--jaune:#f5b700;--marron:#a2845e;--gris:#8e8e93;
+  --ombre:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(20,22,40,.06);
+}
+@media (prefers-color-scheme: dark){ :root{
+  --fond:#16191f;--carte:#20242c;--carte-2:#272c35;--texte:#eef0f4;--doux:#a1a8b5;--tres-doux:#737b89;--ligne:rgba(255,255,255,.07);
+  --ombre:0 1px 2px rgba(0,0,0,.3);
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--fond);color:var(--texte);font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Inter,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+body{padding:calc(env(safe-area-inset-top) + 10px) 0 calc(env(safe-area-inset-bottom) + 30px)}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--bleu);text-decoration:none}
+.cache{display:none!important}
+.page{max-width:640px;margin:0 auto;padding:0 16px}
+
+/* En-tête */
+.entete{display:flex;align-items:flex-start;gap:10px;margin:4px 0 12px}
+.entete h1{margin:0;font:800 27px/1.15 -apple-system,"SF Pro Display",Inter,sans-serif;letter-spacing:-.025em}
+.entete .date{color:var(--doux);font-size:14px;margin-top:2px}
+.entete .actions{margin-left:auto;display:flex;gap:8px}
+.rond{width:38px;height:38px;border-radius:50%;border:0;background:var(--carte);box-shadow:var(--ombre);display:grid;place-items:center;cursor:pointer}
+.rond svg{width:18px;height:18px}
+.rond.tourne svg{animation:tour 1s linear infinite}@keyframes tour{to{transform:rotate(360deg)}}
+.etat-pc{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:999px;margin-bottom:12px;
+  background:color-mix(in srgb,var(--c) 13%,transparent);color:color-mix(in srgb,var(--c) 80%,var(--texte))}
+.etat-pc::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
+
+/* Sélecteur Travail / Maison */
+.segment{display:grid;grid-template-columns:1fr 1fr;background:var(--carte-2);border-radius:12px;padding:3px;margin-bottom:12px}
+.segment button{border:0;background:none;padding:8px;border-radius:9px;font-weight:600;color:var(--doux);cursor:pointer}
+.segment button.actif{background:var(--carte);color:var(--texte);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+
+/* Pastilles du jour */
+.pastilles{display:flex;gap:8px;overflow-x:auto;margin:0 -16px 14px;padding:2px 16px;scrollbar-width:none}
+.pastilles::-webkit-scrollbar{display:none}
+.pastille{flex:none;min-width:92px;padding:10px 12px;border-radius:16px;background:var(--carte);box-shadow:var(--ombre)}
+.pastille .i{font-size:18px;line-height:1;color:var(--c)}.pastille .i svg{width:19px;height:19px}
+.pastille b{display:block;font:750 21px/1.15 -apple-system,"SF Pro Display",Inter,sans-serif;margin-top:5px;font-variant-numeric:tabular-nums}
+.pastille span{display:block;font-size:11.5px;color:var(--doux);line-height:1.2}
+
+/* Barre des rubriques (collante) */
+.rubriques{position:sticky;top:0;z-index:20;display:flex;gap:6px;overflow-x:auto;margin:0 -16px 10px;padding:8px 16px;
+  background:color-mix(in srgb,var(--fond) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);scrollbar-width:none}
+.rubriques::-webkit-scrollbar{display:none}
+.rubriques button{flex:none;border:0;border-radius:999px;padding:7px 13px;font-size:13.5px;font-weight:600;background:var(--carte);box-shadow:var(--ombre);cursor:pointer;white-space:nowrap}
+.rubriques button i{font-style:normal;margin-right:4px}
+
+/* Rubriques repliables */
+.section{margin-bottom:10px;border-radius:20px;background:var(--carte);box-shadow:var(--ombre);overflow:hidden;scroll-margin-top:60px}
+.section>summary{list-style:none;display:flex;align-items:center;gap:11px;padding:13px 14px;cursor:pointer;user-select:none}
+.section>summary::-webkit-details-marker{display:none}
+.section .si{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;color:#fff;background:var(--c);flex:none;font-size:16px}
+.section .si svg{width:17px;height:17px}
+.section h2{margin:0;font-size:16.5px;font-weight:700;letter-spacing:-.01em}
+.section .resume{display:block;font-size:12.5px;color:var(--doux);font-weight:500;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.section .titres{flex:1;min-width:0}
+.section .chevron{width:18px;height:18px;color:var(--tres-doux);transition:transform .25s;flex:none}
+.section[open] .chevron{transform:rotate(90deg)}
+.section .corps{padding:0 14px 14px}
+
+/* Blocs dans une rubrique */
+.bloc{padding:12px 0;border-top:1px solid var(--ligne)}
+.bloc:first-child{border-top:0;padding-top:2px}
+.bloc-titre{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--tres-doux);margin-bottom:6px}
+.bloc-titre .droite{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600}
+.grand{font:780 30px/1.1 -apple-system,"SF Pro Display",Inter,sans-serif;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.sous{color:var(--doux);font-size:13px}
+.ligne{display:flex;align-items:center;gap:10px;padding:9px 0;min-width:0}
+.ligne + .ligne{border-top:1px solid var(--ligne)}
+.ligne .p{flex:1;min-width:0}
+.ligne .t{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ligne .s{display:block;color:var(--doux);font-size:12.5px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ligne .d{text-align:right;flex:none;font-size:13px;font-variant-numeric:tabular-nums}
+.ligne .d b{display:block;font-size:14.5px}
+.puce{display:inline-block;font-size:11.5px;font-weight:650;padding:2px 8px;border-radius:999px;white-space:nowrap;
+  background:color-mix(in srgb,var(--c,var(--gris)) 15%,transparent);color:color-mix(in srgb,var(--c,var(--gris)) 85%,var(--texte))}
+.av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12.5px;background:var(--c,var(--gris))}
+.num{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;background:var(--c,var(--orange))}
+.plus{display:block;width:100%;margin-top:6px;padding:9px;border:0;border-radius:12px;background:var(--carte-2);font-weight:600;font-size:13.5px;color:var(--bleu);cursor:pointer}
+.vide{color:var(--doux);font-size:13.5px;padding:6px 0}
+.voyant{width:9px;height:9px;border-radius:50%;flex:none;background:var(--gris)}
+.voyant.vert{background:var(--vert)}.voyant.orange{background:var(--orange)}.voyant.rouge{background:var(--rouge)}
+.cartes{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+.mini{padding:10px 11px;border-radius:14px;background:color-mix(in srgb,var(--c,var(--bleu)) 10%,transparent)}
+.mini b{display:block;font:750 20px/1.15 -apple-system,"SF Pro Display",Inter,sans-serif;font-variant-numeric:tabular-nums}
+.mini span{display:block;font-size:11.5px;color:var(--doux)}
+.barre-age{display:flex;height:10px;border-radius:6px;overflow:hidden;margin:10px 0 6px;background:var(--carte-2)}
+.legende{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--doux)}
+.legende i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:0}
+.boutons{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{border:0;border-radius:12px;padding:9px 13px;font-weight:600;font-size:14px;background:var(--carte-2);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn.plein{background:var(--bleu);color:#fff}
+.btn svg{width:16px;height:16px}
+.jour{font-size:12px;font-weight:700;color:var(--rouge);text-transform:uppercase;letter-spacing:.04em;margin:10px 0 2px}
+.jour:first-child{margin-top:0}
+.coche{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--tres-doux);background:none;cursor:pointer;display:grid;place-items:center}
+.coche.oui{background:var(--vert);border-color:var(--vert)}
+.coche.oui::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+.barree .t{text-decoration:line-through;color:var(--tres-doux)}
+.champ{width:100%;border:1px solid var(--ligne);background:var(--carte-2);border-radius:12px;padding:10px 12px;font-size:16px;outline:none}
+.champ:focus{border-color:var(--bleu)}
+.form-ligne{display:flex;gap:8px;margin-bottom:6px}
+.meteo-haut{display:flex;align-items:center;gap:12px}
+.meteo-haut .ic{font-size:44px;line-height:1}
+.heures{display:flex;gap:4px;overflow-x:auto;margin:10px -14px 0;padding:0 14px;scrollbar-width:none}
+.heures::-webkit-scrollbar{display:none}
+.heures div{flex:none;width:46px;text-align:center;font-size:12px;padding:6px 0;border-radius:12px;background:var(--carte-2)}
+.heures b{display:block;font-size:14px}.heures .pl{color:var(--bleu);font-size:11px}
+.jours7 .ligne .ic{width:28px;text-align:center;font-size:20px}
+.photos{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -14px;padding:0 14px;scrollbar-width:none}
+.photos::-webkit-scrollbar{display:none}
+.photos img{flex:none;width:78%;height:220px;object-fit:cover;border-radius:16px;scroll-snap-align:center;background:var(--carte-2)}
+.carte-map{height:260px;border-radius:16px;overflow:hidden;margin-top:10px;background:var(--carte-2)}
+.article{display:block;padding:9px 0;color:inherit}.article + .article{border-top:1px solid var(--ligne)}
+.article .t{font-weight:600;font-size:14px;line-height:1.3}.article .s{font-size:12px;color:var(--doux);margin-top:2px}
+.citation{display:block;font-size:12.5px;color:var(--doux);font-style:italic}
+
+/* Feuille (formulaire mémo) */
+.voile{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.voile.ouvert{opacity:1;pointer-events:auto}
+.feuille{width:100%;max-width:640px;max-height:88vh;overflow:auto;background:var(--carte);border-radius:22px 22px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom) + 18px);
+  transform:translateY(30px);transition:transform .25s}
+.voile.ouvert .feuille{transform:none}
+.feuille h3{margin:4px 0 12px;font-size:18px}
+.feuille label{display:block;font-size:12.5px;font-weight:600;color:var(--doux);margin:10px 0 4px}
+.choix{display:flex;flex-wrap:wrap;gap:6px}
+.choix button{border:1px solid var(--ligne);background:var(--carte-2);border-radius:999px;padding:7px 12px;font-size:13.5px;cursor:pointer}
+.choix button.actif{background:var(--bleu);border-color:var(--bleu);color:#fff}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.vu{opacity:.95}
+
+/* Connexion */
+.connexion{max-width:380px;margin:12vh auto 0;padding:0 20px;text-align:center}
+.connexion img{width:72px;height:72px;border-radius:18px;box-shadow:var(--ombre)}
+.connexion h1{font-size:24px;margin:14px 0 4px}
+.connexion form{display:flex;flex-direction:column;gap:10px;margin-top:20px;text-align:left}
+.erreur{color:var(--rouge);font-size:13.5px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-maj" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-sortie" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-carte" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+</svg>
+
+<div id="ecran-connexion" class="connexion cache">
+  <img src="/tableau/icone-180.png" alt="">
+  <h1>Tableau de bord</h1>
+  <div class="sous">Connecte-toi avec ton compte Garde-Manger (le même que sur le PC).</div>
+  <form id="form-connexion">
+    <input class="champ" type="email" name="email" placeholder="E-mail" autocomplete="username" required>
+    <input class="champ" type="password" name="mdp" placeholder="Mot de passe" autocomplete="current-password" required>
+    <button class="btn plein" type="submit" style="justify-content:center;padding:12px">Se connecter</button>
+    <div class="erreur" id="erreur-connexion"></div>
+  </form>
+</div>
+
+<div id="appli" class="page cache">
+  <div class="entete">
+    <div><h1 id="salut">Bonjour Maître</h1><div class="date" id="date"></div></div>
+    <div class="actions">
+      <button class="rond" id="rafraichir" title="Actualiser"><svg><use href="#i-maj"/></svg></button>
+      <button class="rond" id="deconnexion" title="Se déconnecter"><svg><use href="#i-sortie"/></svg></button>
+    </div>
+  </div>
+  <div id="etat-pc"></div>
+  <div class="segment"><button data-espace="travail" class="actif">Travail</button><button data-espace="maison">Maison</button></div>
+  <div class="pastilles" id="pastilles"></div>
+  <nav class="rubriques" id="rubriques"></nav>
+  <div id="sections"></div>
+  <p class="sous" style="text-align:center;margin-top:18px">Les données viennent du PC (mises à jour toutes les 5 min quand il est allumé).<br>Météo, mémos et courses : en direct.</p>
+</div>
+
+<div class="voile" id="voile"><div class="feuille" id="feuille"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+"use strict";
+const URL_SB = "https://ordetqbewyleceirnixa.supabase.co";
+const CLE_SB = "sb_publishable_UX9X4UEfXSjTG8SEuWImNA_ZoLjb_s2";  // clé publique : les données sont protégées par les règles RLS
+const sb = supabase.createClient(URL_SB, CLE_SB, {auth:{persistSession:true, autoRefreshToken:true}});
+
+const $ = (s, r=document) => r.querySelector(s), $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const echap = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const euros = n => (n||0).toLocaleString("fr-BE",{style:"currency",currency:"EUR",maximumFractionDigits:2});
+const eurosCourt = n => n>=1000 ? (n/1000).toLocaleString("fr-BE",{maximumFractionDigits:1})+" k€" : euros(n);
+const JOURS = ["dim.","lun.","mar.","mer.","jeu.","ven.","sam."], MOIS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+const versDate = s => new Date(s.length===10 ? s+"T12:00" : s);
+const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const dateCourte = s => { if (!s) return ""; const d = versDate(s); return `${d.getDate()} ${MOIS[d.getMonth()]}`; };
+const jourLong = s => { const d = versDate(s), a = iso(new Date()), dm = new Date(); dm.setDate(dm.getDate()+1);
+  return s===a ? "Aujourd'hui" : s===iso(dm) ? "Demain" : `${["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"][d.getDay()]} ${d.getDate()} ${MOIS[d.getMonth()]}`; };
+const quand = s => { if (!s) return ""; const d = versDate(s), m = (Date.now()-d)/60000;
+  if (m < 1) return "à l'instant"; if (m < 60) return `il y a ${Math.round(m)} min`;
+  if (iso(d)===iso(new Date())) return d.toTimeString().slice(0,5);
+  const h = new Date(); h.setDate(h.getDate()-1); if (iso(d)===iso(h)) return "hier "+d.toTimeString().slice(0,5);
+  return dateCourte(s); };
+const pluriel = (n, un, plusieurs) => `${n} ${n>1 ? (plusieurs || un+"s") : un}`;
+const initiales = n => (n||"?").replace(/^(mr|mme|m\.)\s+/i,"").split(/[\s\-–]+/).filter(Boolean).slice(0,2).map(x=>x[0]).join("").toUpperCase() || "?";
+function toast(t){ const e = $("#toast"); e.textContent = t; e.classList.add("vu"); clearTimeout(e._t); e._t = setTimeout(()=>e.classList.remove("vu"), 2200); }
+
+const S = { espace: localStorage.getItem("tb-espace") || "travail", snap:{}, memos:[], courses:null, foyer:null, meteo:null, plus:new Set(),
+  ouverts: new Set(JSON.parse(localStorage.getItem("tb-ouverts") || '["accueil","chez"]')) };
+const B = cle => S.snap[cle]?.donnees?.donnees ?? S.snap[cle]?.donnees;   // contenu d'un bloc envoyé par le PC
+
+/* ================================================================ Données */
+async function charger(){
+  $("#rafraichir").classList.add("tourne");
+  try {
+    const [snap, memos] = await Promise.all([
+      sb.from("tableau_instantane").select("cle,donnees,maj"),
+      sb.from("tableau_memos").select("*").eq("archive", false).order("ajoute_le"),
+    ]);
+    if (snap.error) throw snap.error;
+    S.snap = Object.fromEntries((snap.data||[]).map(r => [r.cle, r]));
+    S.memos = memos.data || [];
+    rendre();
+    await Promise.all([chargerMeteo(), chargerCourses()]);
+  } catch(e){ toast("Erreur : " + (e.message || e)); }
+  $("#rafraichir").classList.remove("tourne");
+  rendre();
+}
+async function chargerCourses(){
+  try {
+    if (!S.foyer){ const u = (await sb.auth.getUser()).data.user;
+      const r = await sb.from("household_members").select("household_id").eq("user_id", u.id).limit(1); S.foyer = r.data?.[0]?.household_id; }
+    if (!S.foyer) return;
+    const r = await sb.from("shopping_items").select("id,name,quantity,unit,checked,created_at").eq("household_id", S.foyer).order("checked").order("created_at",{ascending:false}).limit(300);
+    S.courses = r.data || [];
+  } catch(e){ S.courses = S.courses || []; }
+}
+const CODES = { 0:["☀️","Ensoleillé"],1:["🌤️","Plutôt dégagé"],2:["⛅","Partiellement nuageux"],3:["☁️","Couvert"],45:["🌫️","Brouillard"],48:["🌫️","Brouillard givrant"],
+  51:["🌦️","Bruine légère"],53:["🌦️","Bruine"],55:["🌧️","Bruine forte"],61:["🌦️","Pluie faible"],63:["🌧️","Pluie"],65:["🌧️","Forte pluie"],66:["🌧️","Pluie verglaçante"],67:["🌧️","Pluie verglaçante"],
+  71:["🌨️","Neige faible"],73:["🌨️","Neige"],75:["❄️","Forte neige"],77:["🌨️","Grains de neige"],80:["🌦️","Averses"],81:["🌧️","Averses"],82:["⛈️","Fortes averses"],85:["🌨️","Averses de neige"],86:["❄️","Averses de neige"],
+  95:["⛈️","Orage"],96:["⛈️","Orage et grêle"],99:["⛈️","Orage et grêle"] };
+const code = (c, jour=1) => { const x = CODES[c] || ["🌡️","—"]; return !jour && c<=2 ? ["🌙", c===0?"Nuit claire":"Nuit peu nuageuse"] : x; };
+async function chargerMeteo(){
+  const r = B("local")?.reglages || {}, lat = r.meteo_lat || 50.4237, lon = r.meteo_lon || 4.4876;
+  try {
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day`
+      + `&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&timezone=Europe%2FBrussels&forecast_days=7`;
+    S.meteo = await (await fetch(u)).json();
+  } catch(e){ S.meteo = null; }
+}
+
+/* ================================================================ Écritures (mémos, courses) */
+const TYPES = { facturation:{nom:"À facturer", statuts:["à facturer","faite pas envoyée","envoyée"], final:"envoyée"},
+  devis:{nom:"Devis à faire", statuts:["à faire","envoyé","accepté","refusé"], final:"envoyé"},
+  commandes:{nom:"À commander", statuts:["à commander","commandé","reçu"], final:"reçu"},
+  saison:{nom:"Début de saison", statuts:["à prévoir","fait"], final:"fait"} };
+const FINAUX = { facturation:["envoyée"], devis:["envoyé","accepté","refusé"], commandes:["reçu"], saison:["fait"] };
+async function memoEnregistrer(m){
+  const r = await sb.from("tableau_memos").upsert(m, {onConflict:"id"});
+  if (r.error) throw r.error;
+}
+async function memoFait(id){
+  const m = S.memos.find(x=>x.id===id); if (!m) return;
+  await memoEnregistrer({...m, statut:TYPES[m.type].final, archive:true, archive_le:new Date().toISOString()});
+  S.memos = S.memos.filter(x=>x.id!==id); rendre(); toast("Fait · archivé");
+}
+function feuilleMemo(id, type){
+  const m = id ? S.memos.find(x=>x.id===id) : {type, client:"", localite:"", description:"", statut:TYPES[type].statuts[0]};
+  const t = TYPES[m.type];
+  ouvrirFeuille(`<h3>${id ? echap(m.client) : "Nouveau · " + t.nom}</h3>
+    <form id="form-memo">
+      <label>Client</label><input class="champ" name="client" value="${echap(m.client)}" required>
+      <label>Localité</label><input class="champ" name="localite" value="${echap(m.localite)}">
+      <label>Description</label><textarea class="champ" name="description" rows="4">${echap(m.description)}</textarea>
+      <label>Statut</label><div class="choix" id="statuts">${t.statuts.map(s=>`<button type="button" data-s="${echap(s)}" class="${s===m.statut?"actif":""}">${echap(s)}</button>`).join("")}</div>
+      <div class="boutons"><button class="btn plein" type="submit">Enregistrer</button>
+        ${id ? `<button class="btn" type="button" id="memo-fait">✓ Fait (archiver)</button>` : ""}
+        <button class="btn" type="button" data-fermer>Annuler</button></div>
+    </form>`);
+  $$("#statuts button").forEach(b => b.onclick = () => { $$("#statuts button").forEach(x=>x.classList.toggle("actif", x===b)); });
+  if (id) $("#memo-fait").onclick = async () => { try { await memoFait(id); fermerFeuille(); } catch(e){ toast(e.message); } };
+  $("#form-memo").onsubmit = async ev => {
+    ev.preventDefault(); const f = ev.target, statut = $("#statuts .actif")?.dataset.s || t.statuts[0];
+    const fin = FINAUX[m.type].includes(statut), maintenant = new Date().toISOString();
+    const n = { id: id || crypto.randomUUID(), type:m.type, client:f.client.value.trim(), localite:f.localite.value.trim(), description:f.description.value.trim(),
+      statut, archive: fin, archive_le: fin ? maintenant : null, ajoute_le: m.ajoute_le || maintenant };
+    if (!n.client) return toast("Nom du client manquant");
+    try { await memoEnregistrer(n); S.memos = fin ? S.memos.filter(x=>x.id!==n.id) : [...S.memos.filter(x=>x.id!==n.id), n];
+      fermerFeuille(); rendre(); toast(fin ? "Enregistré · archivé" : "Enregistré"); } catch(e){ toast(e.message); }
+  };
+}
+function ouvrirFeuille(html){ $("#feuille").innerHTML = html; $("#voile").classList.add("ouvert"); }
+function fermerFeuille(){ $("#voile").classList.remove("ouvert"); }
+$("#voile").addEventListener("click", e => { if (e.target.id==="voile" || e.target.closest("[data-fermer]")) fermerFeuille(); });
+
+async function coursesAjouter(nom){
+  const u = (await sb.auth.getUser()).data.user;
+  const r = await sb.from("shopping_items").insert({household_id:S.foyer, name:nom, source:"manuel", category:"autre", added_by:u.id});
+  if (r.error) throw r.error; await chargerCourses(); rendre();
+}
+async function coursesCocher(id, oui){
+  const x = S.courses.find(c=>c.id===id); if (x) x.checked = oui; rendre();
+  const r = await sb.from("shopping_items").update({checked:oui}).eq("id", id); if (r.error) toast(r.error.message);
+}
+
+/* ================================================================ Petits morceaux d'affichage */
+/* Liste avec « Afficher plus » : les N premiers, le reste derrière un bouton. */
+function liste(cle, items, rendu, n=3, vide="Rien ici."){
+  if (!items.length) return `<div class="vide">${echap(vide)}</div>`;
+  const ouvert = S.plus.has(cle), vus = ouvert ? items : items.slice(0, n);
+  return vus.map(rendu).join("") + (items.length > n ? `<button class="plus" data-plus="${cle}">${ouvert ? "Afficher moins" : `Afficher plus (${items.length-n})`}</button>` : "");
+}
+const bloc = (titre, contenu, droite="") => `<div class="bloc"><div class="bloc-titre">${titre}${droite?`<span class="droite">${droite}</span>`:""}</div>${contenu}</div>`;
+const couleurRetard = j => j>90 ? "var(--rouge)" : j>30 ? "var(--orange)" : "var(--jaune)";
+function ligneFacture(f){
+  const b = f.statut==="paid" ? `<span class="puce" style="--c:var(--vert)">Payée</span>` : f.statut==="concept" ? `<span class="puce">Brouillon</span>`
+    : f.retard>0 ? `<span class="puce" style="--c:${couleurRetard(f.retard)}">${f.retard} j</span>` : `<span class="puce" style="--c:var(--bleu)">éch. ${dateCourte(f.echeance)}</span>`;
+  return `<div class="ligne"><div class="p"><span class="t">${echap(f.client)}</span><span class="s">${echap(f.numero)} · ${dateCourte(f.date)} ${b}</span></div>
+    <div class="d"><b>${euros(f.statut==="sent" ? f.reste : f.total)}</b></div></div>`;
+}
+function ligneMemo(m){
+  return `<div class="ligne"><button class="coche" data-memo-fait="${m.id}" title="Fait"></button>
+    <div class="p" data-memo="${m.id}" style="cursor:pointer"><span class="t">${echap(m.client)}${m.localite?` <span class="sous">· ${echap(m.localite)}</span>`:""}</span>
+    ${m.description?`<span class="s">${echap(m.description)}</span>`:""}</div><span class="puce" style="--c:var(--bleu)">${echap(m.statut)}</span></div>`;
+}
+function blocMemos(type){
+  const l = S.memos.filter(m=>m.type===type);
+  return bloc(`${TYPES[type].nom} · ${l.length}`, liste("memo-"+type, l, ligneMemo, 3, "Rien en attente 👍"),
+    `<a href="#" data-memo-nouveau="${type}">+ Ajouter</a>`);
+}
+function tranches(imp){
+  const t = [{l:"À échoir",c:"var(--bleu)",v:0},{l:"1–30 j",c:"var(--jaune)",v:0},{l:"31–90 j",c:"var(--orange)",v:0},{l:"> 90 j",c:"var(--rouge)",v:0}];
+  for (const f of imp) t[f.retard<=0?0:f.retard<=30?1:f.retard<=90?2:3].v += f.reste; return t;
+}
+
+/* ================================================================ Rubriques */
+function chantiersDu(j){
+  const cal = (B("calendrier")?.travail || []).filter(e=>e.debut.slice(0,10)===j && !e.journee).map(e=>({nom:e.client||e.titre, titre:e.titre, heure:e.heure||"", adresse:e.adresse||""}));
+  const man = (B("local")?.semaine?.[j] || []).filter(x=>!x.fait).map(x=>({nom:x.nom||x.adresse, heure:x.heure||"", adresse:x.adresse}));
+  return [...cal, ...man].sort((a,b)=>(a.heure||"99").localeCompare(b.heure||"99"));
+}
+function canauxPoint(texte){
+  return (texte||"").split("\n").map(l=>l.replace(/^\s*[-*•]\s*/,"").trim()).filter(l=>l && !/gmail/i.test(l)).map(l => {
+    const m = l.match(/^\**([^:*]+?)\**\s*:\s*(.*)$/); if (!m) return null;
+    const reste = m[2].replace(/\*\*/g,"").trim();
+    if (/^rien\b|^aucun/i.test(reste)) return {canal:m[1].trim(), rien:reste.replace(/\s*\(.*\)\.?$/,"")};
+    const out = []; let cur = "", prof = 0;
+    for (const ch of reste){ if ("(«".includes(ch)) prof++; else if (")»".includes(ch)) prof = Math.max(0,prof-1);
+      if ((ch===","||ch===";") && !prof){ if (cur.trim()) out.push(cur.trim()); cur=""; } else cur += ch; }
+    if (cur.trim()) out.push(cur.trim().replace(/\.$/,""));
+    return {canal:m[1].trim(), personnes: out.map(x=>{ const p = x.match(/^(.*?)\s*\((.*)\)\s*\.?$/); return p ? {nom:p[1], note:p[2].replace(/[«»]/g,"").trim()} : {nom:x, note:""}; })};
+  }).filter(Boolean);
+}
+function tachesPoint(texte){
+  const l = [];
+  for (const ligne of (texte||"").split("\n")){
+    const m = ligne.match(/^\s*(\d+)\.\s+(.*)$/);
+    if (m){ const g = m[2].match(/\*\*(.+?)\*\*/); l.push({titre:(g?g[1]:m[2]).replace(/\*\*/g,"").replace(/\s*:$/,""), detail:m[2].replace(/\*\*(.+?)\*\*/,"").replace(/^[\s:–-]+/,"").replace(/\*\*/g,"").replace(/^\(.*?\)\s*:?\s*/,"").trim()}); }
+  }
+  return l;
+}
+
+const RUBRIQUES = {
+  travail: [
+    { id:"accueil", nom:"Accueil", emo:"🏠", c:"var(--bleu)", resume: () => {
+        const m = B("mails"); const n = canauxPoint(B("point")?.messages).reduce((a,c)=>a+(c.personnes?.length||0),0);
+        return [m ? pluriel(m.non_lus,"mail non lu","mails non lus") : "", n ? pluriel(n,"message à répondre","messages à répondre") : ""].filter(Boolean).join(" · "); },
+      rendu: () => {
+        const m = B("mails"), p = B("point");
+        const mails = m ? liste("mails", m.messages, x => `<div class="ligne"><span class="av" style="--c:${x.genre==="client"?"var(--vert)":x.genre==="devis"?"var(--rose)":x.genre==="fournisseur"?"var(--marron)":"var(--gris)"}">${echap(initiales(x.de))}</span>
+            <div class="p"><span class="t">${x.lu?"":"🔵 "}${echap(x.de)}</span><span class="s">${echap(x.sujet)}</span></div><div class="d sous">${quand(x.quand)}</div></div>`, 3, "Aucun mail pro récent.") : `<div class="vide">Pas encore de données.</div>`;
+        const canaux = p?.existe ? canauxPoint(p.messages) : [];
+        const msgs = canaux.map(c => c.rien ? `<div class="ligne"><span class="av" style="--c:var(--vert)">✓</span><div class="p"><span class="t">${echap(c.canal)}</span><span class="s">${echap(c.rien)}</span></div></div>`
+          : `<div class="ligne" style="align-items:flex-start"><span class="av" style="--c:${/whats/i.test(c.canal)?"var(--vert)":"var(--bleu)"}">💬</span><div class="p"><span class="t">${echap(c.canal)}</span>
+              ${c.personnes.map(x=>`<div style="margin-top:4px"><b style="font-size:13.5px">${echap(x.nom)}</b>${x.note?`<span class="citation">${echap(x.note)}</span>`:""}</div>`).join("")}</div></div>`).join("");
+        const taches = p?.existe ? tachesPoint(p.a_faire) : [];
+        return bloc(`Mails pro · ${m?.non_lus ?? "?"} non lu(s)`, mails, m?.ecartes ? `${m.ecartes} pubs écartées` : "")
+          + (msgs ? bloc("Messages · point du matin", msgs, quand(p.modifie)) : "")
+          + (taches.length ? bloc("À faire ce matin", liste("taches", taches, (x,i) => `<div class="ligne" style="align-items:flex-start"><span class="num">${i+1}</span><div class="p"><span class="t" style="white-space:normal">${echap(x.titre)}</span>${x.detail?`<span class="s">${echap(x.detail)}</span>`:""}</div></div>`, 3)) : "");
+      } },
+    { id:"paye", nom:"Paye-moi Reda", emo:"💶", c:"var(--orange)", resume: () => { const d = B("lg"); const af = S.memos.filter(m=>m.type==="facturation").length;
+        return d ? `${eurosCourt(d.total_impaye)} à encaisser · ${d.en_retard} en retard · ${af} à facturer` : ""; },
+      rendu: () => {
+        const d = B("lg"); if (!d) return `<div class="vide">Pas encore de données.</div>`;
+        const t = tranches(d.impayees), tot = t.reduce((a,x)=>a+x.v,0) || 1;
+        return bloc("Reste à encaisser", `<div class="grand" style="color:var(--orange)">${euros(d.total_impaye)}</div>
+            <div class="barre-age">${t.filter(x=>x.v).map(x=>`<div style="width:${x.v/tot*100}%;background:${x.c}"></div>`).join("")}</div>
+            <div class="legende">${t.map(x=>`<span><i style="background:${x.c}"></i>${x.l} : ${x.v?eurosCourt(x.v):"–"}</span>`).join("")}</div>`)
+          + bloc(`Factures impayées · ${d.impayees.length}`, liste("impayees", [...d.impayees].sort((a,b)=>b.retard-a.retard), ligneFacture, 3, "Tout est payé 🎉"))
+          + blocMemos("facturation")
+          + bloc(`Brouillons à finaliser · ${d.brouillons.length}`, liste("brouillons", d.brouillons, ligneFacture, 2))
+          + bloc("Dernières factures", liste("dernieres", d.dernieres, ligneFacture, 2));
+      } },
+    { id:"achete", nom:"Achèteeee-la", emo:"✅", c:"var(--vert)", resume: () => { const d = B("lg"); return d ? `${d.devis_sans_reponse} devis sans réponse · ${S.memos.filter(m=>m.type==="devis").length} à faire` : ""; },
+      rendu: () => {
+        const d = B("lg"); if (!d) return `<div class="vide">Pas encore de données.</div>`;
+        const sr = d.devis_sans_reponse_liste || [];
+        return bloc(`Devis sans réponse · ${sr.length}`, liste("sr", sr, x => `<div class="ligne"><div class="p"><span class="t">${echap(x.client)}</span><span class="s">${echap(x.numero)} · envoyé le ${dateCourte(x.date)}</span></div>
+              <div class="d"><b>${euros(x.total)}</b><span class="puce" style="--c:${x.jours>60?"var(--rouge)":x.jours>30?"var(--orange)":"var(--menthe)"}">${x.jours} j</span></div></div>`, 3, "Tous les devis ont une réponse."), eurosCourt(d.devis_sans_reponse_total))
+          + bloc("Devis acceptés", liste("acc", d.acceptes, x => `<div class="ligne"><div class="p"><span class="t">${echap(x.client)}</span><span class="s">${echap(x.numero)} · ${dateCourte(x.date)}</span></div>
+              <div class="d"><b>${euros(x.total)}</b>${x.facture?'<span class="puce" style="--c:var(--vert)">Facturé</span>':'<span class="puce" style="--c:var(--orange)">À facturer ?</span>'}</div></div>`, 2))
+          + blocMemos("devis");
+      } },
+    { id:"route", nom:"En route", emo:"🚐", c:"var(--rouge)", resume: () => { const t = B("tournee");
+        const n = chantiersDu(iso(new Date())).length; return t && !t.vide && !t.erreur ? `${n ? pluriel(n,"chantier")+" aujourd'hui · " : ""}tournée ${jourLong(t.jour).toLowerCase()} : ${Math.round(t.km)} km, ${euros(t.euros)}` : (n ? pluriel(n,"chantier")+" aujourd'hui" : "pas de chantier prévu"); },
+      rendu: () => {
+        const t = B("tournee"); let tour = "";
+        if (t && !t.vide && !t.erreur){
+          const h = t.minutes>=60 ? `${Math.floor(t.minutes/60)} h ${String(t.minutes%60).padStart(2,"0")}` : `${t.minutes} min`;
+          tour = bloc(`Tournée conseillée · ${jourLong(t.jour).toLowerCase()}`, `<div class="cartes"><div class="mini" style="--c:var(--orange)"><b>${Math.round(t.km)} km</b><span>${h} de route</span></div>
+              <div class="mini" style="--c:var(--orange)"><b>${euros(t.euros)}</b><span>${t.litres.toLocaleString("fr-BE")} L carburant</span></div>
+              <div class="mini" style="--c:var(--orange)"><b>${t.depart}</b><span>départ · retour ${t.retour}</span></div></div>`
+            + t.arrets.map((a,i)=>`<div class="ligne"><span class="num">${i+1}</span><div class="p"><span class="t">${echap(a.nom)}</span><span class="s">${echap(a.adresse)}</span></div>
+                <div class="d"><b ${a.retard?'style="color:var(--orange)"':""}>${a.arrivee}</b><a href="https://maps.apple.com/?daddr=${encodeURIComponent(a.adresse)}&dirflg=d" style="font-size:12.5px">Plans ›</a></div></div>`).join("")
+            + ((t.sans_adresse||[]).length ? `<div class="sous" style="margin-top:6px">⚠️ Sans adresse : ${t.sans_adresse.map(x=>echap(x.titre)).join(", ")}</div>` : "")
+            + `<div class="boutons"><a class="btn plein" href="${echap(t.maps)}">${'<svg><use href="#i-ext"/></svg>'}Itinéraire complet</a>
+                <button class="btn" data-carte>${'<svg><use href="#i-carte"/></svg>'}${S.carte?"Masquer la carte":"Voir la carte"}</button></div>`
+            + (S.carte ? `<div class="carte-map" id="carte"></div>` : ""));
+        }
+        const jours = []; for (let k=0;k<14;k++){ const d = new Date(); d.setDate(d.getDate()+k); const j = iso(d), c = chantiersDu(j); if (c.length) jours.push({j,c}); }
+        const plan = liste("planning", jours, x => `<div class="jour">${jourLong(x.j)}</div>` + x.c.map(c=>`<div class="ligne"><div class="d" style="width:46px;text-align:left;color:var(--rouge);font-weight:700">${c.heure||"—"}</div>
+            <div class="p"><span class="t">${echap(c.nom)}</span>${c.adresse?`<span class="s">${echap(c.adresse)}</span>`:""}</div></div>`).join(""), 3, "Rien de prévu ces deux semaines.");
+        return tour + bloc("Planning · 14 jours", plan);
+      } },
+    { id:"chlore", nom:"Y'a plus de chlore ?", emo:"🧪", c:"var(--cyan)", resume: () => { const s = B("local")?.stock || []; const bas = s.filter(p=>p.quantite!==null && p.quantite<=p.seuil).length;
+        return `${bas ? pluriel(bas,"produit")+" sous le seuil · " : ""}${S.memos.filter(m=>m.type==="commandes").length} à commander`; },
+      rendu: () => {
+        const s = B("local")?.stock || [], comptes = s.filter(p=>p.quantite!==null);
+        const stock = comptes.length ? liste("stock", [...s].sort((a,b)=>((a.quantite??99)-a.seuil)-((b.quantite??99)-b.seuil)), p => {
+            const bas = p.quantite!==null && p.quantite<=p.seuil;
+            return `<div class="ligne"><div class="p"><span class="t">${echap(p.nom)}</span><span class="s">${echap(p.unite)} · seuil ${p.seuil}</span></div>
+              <div class="d"><b style="color:${bas?"var(--rouge)":"inherit"}">${p.quantite ?? "?"}</b></div></div>`; }, 4)
+          : `<div class="vide">Le stock n'a pas encore été compté (à faire sur le PC).</div>`;
+        return blocMemos("commandes") + bloc("Stock camionnette", stock) + blocMemos("saison");
+      } },
+    { id:"mains", nom:"Les petites mains", emo:"🤖", c:"var(--indigo)", resume: () => { const t = B("scripts")?.taches || [];
+        const r = t.filter(x=>x.voyant==="rouge").length, o = t.filter(x=>x.voyant==="orange").length; return r ? `${r} script(s) en erreur` : o ? `${o} rapport(s) à lancer` : "tout a tourné"; },
+      rendu: () => {
+        const sc = B("scripts")?.taches || [], pr = B("presse")?.rubriques || [], seo = B("seo");
+        const scripts = liste("scripts", sc, x => `<div class="ligne"><span class="voyant ${x.voyant}"></span><div class="p"><span class="t">${echap(x.nom)}</span><span class="s">${echap(x.resume || x.detail)}</span></div>
+            <div class="d sous">${x.passage?quand(x.passage):"—"}</div></div>`, 3);
+        const art = a => `<a class="article" href="${echap(a.lien)}" target="_blank" rel="noopener"><div class="t">${echap(a.titre)}</div><div class="s">${echap(a.source)} · ${quand(a.quand)}</div></a>`;
+        const presse = pr.map(r => `<div class="jour" style="color:var(--rouge)">${echap(r.nom)}</div>` + liste("presse-"+r.nom, r.articles, art, 2, "Rien de neuf.")).join("");
+        let seoH = "";
+        if (seo?.existe){ const re = /([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ ]{1,24}?)\s*:\s*\*{0,2}([\d][\d\s.,]*\s?%?)\*{0,2}\s*\(([^)]*)\)/g; const c = []; let m;
+          const l0 = (seo.chiffres||"").split("\n")[0]; while ((m = re.exec(l0))) c.push(m);
+          seoH = bloc(echap(seo.titre), `<div class="cartes">${c.slice(0,4).map(x=>`<div class="mini" style="--c:var(--menthe)"><span>${echap(x[1].trim())}</span><b>${echap(x[2].trim())}</b><span>avant ${echap(x[3])}</span></div>`).join("")}</div>`); }
+        return bloc("Scripts & rapports", scripts) + seoH + (pr.length ? bloc("Revue de presse", presse) : "");
+      } },
+  ],
+  maison: [
+    { id:"chez", nom:"Météo", emo:"🌤️", c:"var(--bleu)", resume: () => { const m = S.meteo?.current; return m ? `${Math.round(m.temperature_2m)}° · ${code(m.weather_code, m.is_day)[1]}` : ""; },
+      rendu: () => {
+        const m = S.meteo; if (!m?.current) return `<div class="vide">Météo indisponible.</div>`;
+        const c = m.current, [ic, lib] = code(c.weather_code, c.is_day), maint = new Date(), i0 = m.hourly.time.findIndex(t=>new Date(t) >= new Date(maint.getTime()-3600e3));
+        const heures = m.hourly.time.slice(i0, i0+24).map((t,k)=>{ const i = i0+k, h = new Date(t).getHours();
+          return `<div>${String(h).padStart(2,"0")}h<br><span style="font-size:18px">${code(m.hourly.weather_code[i], h>=7&&h<20)[0]}</span><b>${Math.round(m.hourly.temperature_2m[i])}°</b><span class="pl">${m.hourly.precipitation_probability[i]??0}%</span></div>`; }).join("");
+        const jours = m.daily.time.map((t,i)=>`<div class="ligne"><span class="ic">${code(m.daily.weather_code[i])[0]}</span><div class="p"><span class="t">${i===0?"Aujourd'hui":jourLong(t)}</span></div>
+            <div class="d"><b>${Math.round(m.daily.temperature_2m_max[i])}° <span class="sous">${Math.round(m.daily.temperature_2m_min[i])}°</span></b><span style="color:var(--bleu);font-size:12px">${m.daily.precipitation_probability_max[i]??0} %</span></div></div>`);
+        return `<div class="meteo-haut"><span class="ic">${ic}</span><div><div class="grand">${Math.round(c.temperature_2m)}°</div><div class="sous">${lib} · ressenti ${Math.round(c.apparent_temperature)}° · vent ${Math.round(c.wind_speed_10m)} km/h</div></div></div>
+          <div class="heures">${heures}</div><div class="jours7" style="margin-top:8px">${S.plus.has("jours7") ? jours.join("") : jours.slice(0,3).join("")}<button class="plus" data-plus="jours7">${S.plus.has("jours7")?"Afficher moins":"Afficher les 7 jours"}</button></div>`;
+      } },
+    { id:"courses", nom:"Courses", emo:"🛒", c:"var(--bleu)", resume: () => S.courses ? `${S.courses.filter(x=>!x.checked).length} article(s) à acheter` : "",
+      rendu: () => {
+        if (!S.courses) return `<div class="vide">Chargement…</div>`;
+        const reste = S.courses.filter(x=>!x.checked), faits = S.courses.filter(x=>x.checked);
+        return `<form id="form-courses" class="form-ligne"><input class="champ" name="nom" placeholder="Ajouter un article…" autocomplete="off"><button class="btn plein" type="submit"><svg><use href="#i-plus"/></svg></button></form>`
+          + liste("courses", [...reste, ...faits], x => `<div class="ligne ${x.checked?"barree":""}"><button class="coche ${x.checked?"oui":""}" data-course="${x.id}" data-oui="${x.checked?0:1}"></button>
+              <div class="p"><span class="t">${echap(x.name)}</span>${x.quantity?`<span class="s">${x.quantity}${x.unit?" "+echap(x.unit):""}</span>`:""}</div></div>`, 6, "Liste vide : le frigo est content.");
+      } },
+    { id:"poubelles", nom:"Poubelles", emo:"🗑️", c:"var(--vert)", resume: () => { const p = (B("poubelles")?.types||[]).filter(x=>x.prochain).sort((a,b)=>a.prochain.localeCompare(b.prochain));
+        return p[0] ? `${p.filter(x=>x.prochain===p[0].prochain).map(x=>x.nom).join(" + ")} · ${jourLong(p[0].prochain).toLowerCase()}` : ""; },
+      rendu: () => { const p = (B("poubelles")?.types||[]).filter(x=>x.prochain).sort((a,b)=>a.prochain.localeCompare(b.prochain));
+        return p.length ? p.map(x=>`<div class="ligne"><span class="av" style="--c:${x.couleur||"var(--gris)"}">🗑️</span><div class="p"><span class="t">${echap(x.nom)}</span><span class="s">puis ${(x.suivants||[]).slice(0,2).map(dateCourte).join(", ")}</span></div><div class="d"><b>${jourLong(x.prochain)}</b></div></div>`).join("") : `<div class="vide">Pas de collecte connue.</div>`; } },
+    { id:"agenda", nom:"Agenda familial", emo:"📅", c:"var(--rouge)", resume: () => { const e = [...(B("calendrier")?.famille||[]), ...(B("agenda")?.evenements||[])]; return e.length ? pluriel(e.length,"rendez-vous") : "rien de prévu"; },
+      rendu: () => { const e = [...(B("calendrier")?.famille||[]), ...(B("agenda")?.evenements||[])].filter(x=>x.debut.slice(0,10)>=iso(new Date())).sort((a,b)=>a.debut.localeCompare(b.debut));
+        return liste("agenda", e, x => `<div class="ligne"><div class="d" style="width:66px;text-align:left;font-weight:700;color:var(--rouge)">${dateCourte(x.debut)}<br><span class="sous">${x.journee?"journée":x.debut.slice(11,16)}</span></div><div class="p"><span class="t">${echap(x.titre)}</span>${x.lieu?`<span class="s">${echap(x.lieu)}</span>`:""}</div></div>`, 4, "Rien de prévu."); } },
+    { id:"photos", nom:"Souvenirs", emo:"🖼️", c:"var(--violet)", resume: () => { const p = B("photos"); return p?.photos?.length ? `${p.photos.length} photos · ${p.nom}` : "album non branché"; },
+      rendu: () => { const p = B("photos"); return p?.photos?.length ? `<div class="photos">${p.photos.slice(0, S.plus.has("photos") ? 80 : 8).map(u=>`<img loading="lazy" src="${echap(u)}" alt="" onerror="this.remove()">`).join("")}</div>`
+          + (p.photos.length > 8 ? `<button class="plus" data-plus="photos">${S.plus.has("photos")?"Moins de photos":`Toutes les photos (${p.photos.length})`}</button>` : "") : `<div class="vide">Album non branché sur le PC.</div>`; } },
+  ],
+};
+
+/* ================================================================ Rendu de la page */
+function pastilles(){
+  const out = [], m = S.meteo?.current;
+  if (m){ const [ic] = code(m.weather_code, m.is_day); out.push({i:ic, v:`${Math.round(m.temperature_2m)}°`, l:code(m.weather_code, m.is_day)[1], c:"var(--bleu)"}); }
+  if (S.espace==="travail"){
+    const a = iso(new Date()), dm = new Date(); dm.setDate(dm.getDate()+1);
+    const na = chantiersDu(a).length, nd = chantiersDu(iso(dm)).length;
+    out.push({i:"🚐", v: na || nd, l: na ? "chantiers aujourd'hui" : "chantiers demain", c:"var(--rouge)", ancre:"route"});
+    const lg = B("lg"); if (lg) out.push({i:"⚠️", v:lg.en_retard, l:"factures en retard", c:"var(--rouge)", ancre:"paye"});
+    out.push({i:"💶", v:S.memos.filter(x=>x.type==="facturation").length, l:"à facturer", c:"var(--orange)", ancre:"paye"});
+    const ml = B("mails"); if (ml) out.push({i:"✉️", v:ml.non_lus, l:"mails à lire", c:"var(--indigo)", ancre:"accueil"});
+  } else {
+    const p = (B("poubelles")?.types||[]).filter(x=>x.prochain).sort((a,b)=>a.prochain.localeCompare(b.prochain))[0];
+    if (p) out.push({i:"🗑️", v:jourLong(p.prochain).split(" ")[0], l:p.nom, c:"var(--vert)", ancre:"poubelles"});
+    if (S.courses) out.push({i:"🛒", v:S.courses.filter(x=>!x.checked).length, l:"à acheter", c:"var(--bleu)", ancre:"courses"});
+  }
+  return out.map(x=>`<div class="pastille" style="--c:${x.c}" ${x.ancre?`data-aller="${x.ancre}"`:""}><span class="i">${x.i}</span><b>${x.v}</b><span>${echap(x.l)}</span></div>`).join("");
+}
+function etatPc(){
+  const vu = S.snap.pc?.donnees?.vu; if (!vu) return `<span class="etat-pc" style="--c:var(--gris)">Aucune donnée du PC pour l'instant</span>`;
+  const min = (Date.now() - new Date(vu)) / 60000;
+  return min < 12 ? `<span class="etat-pc" style="--c:var(--vert)">PC allumé · données à jour (${quand(vu)})</span>`
+    : `<span class="etat-pc" style="--c:var(--orange)">PC éteint · données de ${quand(vu)}</span>`;
+}
+function rendre(){
+  const h = new Date().getHours();
+  $("#salut").textContent = (h < 12 ? "Bonjour" : h < 18 ? "Bon après-midi" : "Bonsoir") + " Maître";
+  $("#date").textContent = new Date().toLocaleDateString("fr-BE",{weekday:"long", day:"numeric", month:"long"});
+  $("#etat-pc").innerHTML = etatPc();
+  $$(".segment button").forEach(b=>b.classList.toggle("actif", b.dataset.espace===S.espace));
+  $("#pastilles").innerHTML = pastilles();
+  const rub = RUBRIQUES[S.espace];
+  $("#rubriques").innerHTML = rub.map(r=>`<button data-aller="${r.id}"><i>${r.emo}</i>${echap(r.nom)}</button>`).join("");
+  const defile = scrollY;
+  $("#sections").innerHTML = rub.map(r => {
+    let corps = ""; try { corps = S.ouverts.has(r.id) ? r.rendu() : ""; } catch(e){ corps = `<div class="erreur">${echap(e.message)}</div>`; }
+    let res = ""; try { res = r.resume() || ""; } catch(e){}
+    return `<details class="section" id="s-${r.id}" data-id="${r.id}" ${S.ouverts.has(r.id)?"open":""}>
+      <summary><span class="si" style="--c:${r.c}">${r.emo}</span><div class="titres"><h2>${echap(r.nom)}</h2><span class="resume">${echap(res)}</span></div><svg class="chevron"><use href="#i-chev"/></svg></summary>
+      <div class="corps">${corps}</div></details>`; }).join("");
+  scrollTo(0, defile);
+  if (S.carte) monterCarte();
+}
+
+/* Carte de la tournée (chargée seulement si on la demande) */
+let maplibreCharge = null;
+function monterCarte(){
+  const t = B("tournee"), div = $("#carte"); if (!div || !t?.arrets) return;
+  if (!window.maplibregl){
+    if (!maplibreCharge){ maplibreCharge = new Promise(ok => {
+      const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css"; document.head.appendChild(l);
+      const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"; s.onload = ok; document.head.appendChild(s); }); }
+    maplibreCharge.then(monterCarte); return;
+  }
+  const sombre = matchMedia("(prefers-color-scheme: dark)").matches, pts = [t.base_point, ...t.arrets.map(a=>a.point), ...(t.trace||[])];
+  const zone = pts.reduce((b,p)=>b.extend(p), new maplibregl.LngLatBounds(pts[0], pts[0]));
+  const m = new maplibregl.Map({container:div, style:`https://tiles.openfreemap.org/styles/${sombre?"dark":"liberty"}`, bounds:zone, fitBoundsOptions:{padding:36, maxZoom:14}, attributionControl:{compact:true}});
+  m.on("load", () => {
+    m.addSource("r", {type:"geojson", data:{type:"Feature", properties:{}, geometry:{type:"LineString", coordinates:t.trace||[]}}});
+    m.addLayer({id:"rb", type:"line", source:"r", layout:{"line-join":"round","line-cap":"round"}, paint:{"line-color":sombre?"#0b2a5c":"#fff","line-width":10}});
+    m.addLayer({id:"rl", type:"line", source:"r", layout:{"line-join":"round","line-cap":"round"}, paint:{"line-color":"#0a84ff","line-width":6}});
+  });
+  const pin = (txt, coul) => { const e = document.createElement("div"); e.textContent = txt;
+    e.style.cssText = `width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font:700 13px -apple-system,sans-serif;background:${coul};border:2.5px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.3)`; return e; };
+  new maplibregl.Marker({element:pin("⌂","#0a84ff")}).setLngLat(t.base_point).addTo(m);
+  t.arrets.forEach((a,i)=>new maplibregl.Marker({element:pin(String(i+1), a.retard?"#ff9500":"#ff3b30")}).setLngLat(a.point).addTo(m));
+}
+
+/* ================================================================ Interactions */
+document.addEventListener("click", async e => {
+  const t = e.target;
+  const seg = t.closest(".segment button"); if (seg){ S.espace = seg.dataset.espace; localStorage.setItem("tb-espace", S.espace); scrollTo(0,0); rendre(); return; }
+  const aller = t.closest("[data-aller]");
+  if (aller){ const id = aller.dataset.aller; if (!S.ouverts.has(id)){ S.ouverts.add(id); sauverOuverts(); rendre(); }
+    const sec = $("#s-"+id); if (sec) sec.scrollIntoView({behavior:"smooth", block:"start"}); return; }
+  const plus = t.closest("[data-plus]"); if (plus){ const k = plus.dataset.plus; S.plus.has(k) ? S.plus.delete(k) : S.plus.add(k); rendre(); return; }
+  const fait = t.closest("[data-memo-fait]"); if (fait){ fait.classList.add("oui"); try { await memoFait(fait.dataset.memoFait); } catch(x){ toast(x.message); } return; }
+  const memo = t.closest("[data-memo]"); if (memo) return feuilleMemo(memo.dataset.memo);
+  const nouv = t.closest("[data-memo-nouveau]"); if (nouv){ e.preventDefault(); return feuilleMemo(null, nouv.dataset.memoNouveau); }
+  const c = t.closest("[data-course]"); if (c) return coursesCocher(c.dataset.course, c.dataset.oui==="1");
+  if (t.closest("[data-carte]")){ S.carte = !S.carte; rendre(); return; }
+  // Ouvrir / fermer une rubrique (mémorisé sur le téléphone)
+  const sum = t.closest(".section > summary");
+  if (sum){ e.preventDefault(); const id = sum.parentNode.dataset.id; S.ouverts.has(id) ? S.ouverts.delete(id) : S.ouverts.add(id); sauverOuverts(); rendre(); }
+});
+document.addEventListener("submit", async e => {
+  if (e.target.id==="form-courses"){ e.preventDefault(); const v = e.target.nom.value.trim(); if (!v) return; e.target.reset();
+    try { await coursesAjouter(v); toast("Ajouté à la liste"); } catch(x){ toast(x.message); } }
+});
+function sauverOuverts(){ try { localStorage.setItem("tb-ouverts", JSON.stringify([...S.ouverts])); } catch(e){} }
+$("#rafraichir").onclick = charger;
+$("#deconnexion").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+document.addEventListener("visibilitychange", () => { if (!document.hidden && $("#appli").offsetParent) charger(); });
+
+/* ================================================================ Connexion */
+$("#form-connexion").onsubmit = async e => {
+  e.preventDefault(); $("#erreur-connexion").textContent = "";
+  const { error } = await sb.auth.signInWithPassword({ email: e.target.email.value.trim(), password: e.target.mdp.value });
+  if (error) { $("#erreur-connexion").textContent = /invalid/i.test(error.message) ? "E-mail ou mot de passe incorrect." : error.message; return; }
+  demarrer();
+};
+async function demarrer(){
+  const { data } = await sb.auth.getSession();
+  if (!data.session){ $("#ecran-connexion").classList.remove("cache"); $("#appli").classList.add("cache"); return; }
+  $("#ecran-connexion").classList.add("cache"); $("#appli").classList.remove("cache");
+  rendre(); charger();
+}
+demarrer();
+</script>
+</body>
+</html>
