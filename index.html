@@ -6,10 +6,8 @@
 <title>Tableau de bord</title>
 <meta name="description" content="Tableau de bord LG Piscines, version téléphone">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#c6ecfb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#08121f" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tableau">
 <link rel="manifest" href="/tableau/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/tableau/icone-180.png">
@@ -49,6 +47,9 @@ html{background:var(--fond-1)}
 body{min-height:100vh;background:linear-gradient(150deg,var(--fond-1),var(--fond-2) 55%,var(--fond-3)) fixed;
   padding:calc(env(safe-area-inset-top) + 10px) 0 calc(env(safe-area-inset-bottom) + 30px)}
 .taches{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+/* Léger voile sombre derrière l'heure et la batterie pour qu'elles restent lisibles sur le fond clair */
+.barre-etat{position:fixed;left:0;right:0;top:0;height:calc(env(safe-area-inset-top) + 14px);z-index:30;pointer-events:none;
+  background:linear-gradient(180deg,rgba(10,30,60,.30),rgba(10,30,60,0))}
 .taches i{position:absolute;border-radius:50%;filter:blur(60px);animation:flotte 24s ease-in-out infinite alternate}
 .taches i:nth-child(1){width:90vw;height:90vw;left:-30vw;top:-20vw;background:var(--t1)}
 .taches i:nth-child(2){width:80vw;height:80vw;right:-35vw;top:30vh;background:var(--t2);animation-duration:29s}
@@ -224,6 +225,7 @@ a{color:var(--bleu);text-decoration:none}
 </svg>
 
 <div class="taches"><i></i><i></i><i></i><i></i></div>
+<div class="barre-etat"></div>
 <div id="ecran-connexion" class="connexion verre cache">
   <img src="/tableau/icone-180.png" alt="">
   <h1>Tableau de bord</h1>

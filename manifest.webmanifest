@@ -4,11 +4,20 @@
   "start_url": "/tableau/",
   "scope": "/tableau/",
   "display": "standalone",
-  "background_color": "#f2f3f8",
-  "theme_color": "#f2f3f8",
+  "background_color": "#c6ecfb",
+  "theme_color": "#c6ecfb",
   "lang": "fr",
   "icons": [
-    { "src": "/tableau/icone-180.png", "sizes": "180x180", "type": "image/png" },
-    { "src": "/tableau/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    {
+      "src": "/tableau/icone-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/tableau/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }
