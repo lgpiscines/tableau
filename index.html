@@ -2,6 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://ordetqbewyleceirnixa.supabase.co wss://ordetqbewyleceirnixa.supabase.co https://api.open-meteo.com https://tiles.openfreemap.org; worker-src 'self' blob:; child-src blob:; object-src 'none'; base-uri 'none'; form-action 'self'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Tableau de bord</title>
 <meta name="description" content="Tableau de bord LG Piscines, version téléphone">
@@ -288,7 +290,7 @@ body.edition .masquees{display:flex}
 <div class="voile" id="voile"><div class="feuille" id="feuille"></div></div>
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
 <script>
 "use strict";
 const URL_SB = "https://ordetqbewyleceirnixa.supabase.co";
@@ -821,8 +823,8 @@ function monterCarte(){
   const t = B("tournee"), div = $("#carte"); if (!div || !t?.arrets) return;
   if (!window.maplibregl){
     if (!maplibreCharge){ maplibreCharge = new Promise(ok => {
-      const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css"; document.head.appendChild(l);
-      const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"; s.onload = ok; document.head.appendChild(s); }); }
+      const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css"; l.integrity = "sha384-K282sW/zFjTkrjR/+yr1H+gCukuy4OEYrkXRybV88g7pk+kZZYpNV6SAV59NcgFg"; l.crossOrigin = "anonymous"; document.head.appendChild(l);
+      const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"; s.integrity = "sha384-KKgyz2mG25bKJ1O2PyqTJPlAF8Kw2BpDmsLTNBXslICOBvhTAyF5F0XhLWF2ZovY"; s.crossOrigin = "anonymous"; s.onload = ok; document.head.appendChild(s); }); }
     maplibreCharge.then(monterCarte); return;
   }
   const sombre = matchMedia("(prefers-color-scheme: dark)").matches, pts = [t.base_point, ...t.arrets.map(a=>a.point), ...(t.trace||[])];
@@ -1057,7 +1059,7 @@ window.AssistantVocal = (() => {
     catch(e){ r = {texte: e.message || "Pas de réponse."}; }
     S.occupe = false; etatMicro();
     attente.innerHTML = echapA(r.texte || "") + (r.source && r.source!=="code" ? `<span class="av-src">${echapA(r.source)}</span>` : "");
-    if (r.liste && r.liste.length) attente.innerHTML += "<br>" + r.liste.slice(0,6).map(d=>`• ${echapA(d.client)} – ${d.km} km – ${eur(d.total)}`).join("<br>");
+    if (r.liste && r.liste.length) attente.innerHTML += "<br>" + r.liste.slice(0,6).map(d=>`• ${echapA(d.client)} – ${echapA(String(d.km))} km – ${eur(d.total)}`).join("<br>");
     (r.actions||[]).forEach(a => { try{ S.T.agir(a); }catch(e){} });
     if (r.confirmation) carte(r.confirmation);
     dire(r.texte, () => { if (S.mains && $a("av-panneau").classList.contains("ouvert")) setTimeout(ecouter, 350); });
