@@ -101,6 +101,14 @@ a{color:var(--bleu);text-decoration:none}
   transition:transform .25s}
 .tuile:active{transform:scale(.97)}
 .tuile.l{grid-column:span 2}
+/* ---------- Tablettes et grands écrans (ajouté le 20/10/2026) ---------- */
+@media (min-width:760px){.page{max-width:1100px;padding:0 24px}.grille{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .voile{align-items:center}.feuille{max-width:760px;border-radius:24px;max-height:86vh}.hero h1{font-size:30px}}
+@media (min-width:1100px){.page{max-width:1440px}.grille{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* téléphone couché ou tablette basse : tuiles moins hautes, plus de colonnes */
+@media (orientation:landscape) and (max-height:600px){.grille{grid-template-columns:repeat(4,minmax(0,1fr))}.tuile{min-height:128px}
+  .feuille{max-height:94vh}}
+@media (pointer:coarse){.rond{width:42px;height:42px}}
 .tuile .fili{position:absolute;right:-18px;bottom:-22px;font-size:96px;line-height:1;opacity:.12;transform:rotate(-12deg);pointer-events:none;filter:saturate(.8)}
 .t-tete{display:flex;align-items:center;gap:8px;position:relative;z-index:1}
 .t-ico{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:15px;background:var(--c);flex:none;box-shadow:0 3px 8px color-mix(in srgb,var(--c) 40%,transparent)}
@@ -875,6 +883,260 @@ async function demarrer(){
   rendre(); charger();
 }
 demarrer();
+</script>
+<!-- ================== Assistant vocal (même bloc sur le PC et sur la version en ligne) ================== -->
+<style>
+.av-bouton{position:fixed;right:calc(env(safe-area-inset-right) + 20px);bottom:calc(env(safe-area-inset-bottom) + 20px);z-index:60;
+  width:64px;height:64px;border-radius:50%;border:0;cursor:pointer;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(150deg,#5ab0ff,#0a84ff 55%,#5e5ce6);box-shadow:0 10px 28px rgba(10,132,255,.45),0 2px 6px rgba(0,0,0,.18);
+  transition:transform .25s}
+.av-bouton:active{transform:scale(.93)}
+.av-bouton svg{width:28px;height:28px}
+.av-bouton.ecoute{animation:av-pulse 1.3s ease-in-out infinite;background:linear-gradient(150deg,#ff6b6b,#ff3b30)}
+.av-bouton.pense::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:3px solid transparent;border-top-color:#0a84ff;animation:av-tour 0.9s linear infinite}
+@keyframes av-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,.5)}50%{box-shadow:0 0 0 16px rgba(255,59,48,0)}}
+@keyframes av-tour{to{transform:rotate(360deg)}}
+.av-panneau{position:fixed;z-index:61;display:flex;flex-direction:column;background:var(--feuille,rgba(246,248,253,.97));color:var(--texte);
+  -webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);border:1px solid var(--verre-bord,rgba(255,255,255,.6));
+  box-shadow:0 20px 60px rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .2s,transform .25s;
+  /* téléphone (portrait) : feuille du bas */
+  left:0;right:0;bottom:0;max-height:82vh;border-radius:24px 24px 0 0;transform:translateY(30px);
+  padding:10px 14px calc(env(safe-area-inset-bottom) + 12px)}
+.av-panneau.ouvert{opacity:1;pointer-events:auto;transform:none}
+/* tablette, iPad, PC : panneau latéral à droite */
+@media (min-width:700px){
+  .av-panneau{left:auto;top:calc(env(safe-area-inset-top) + 16px);right:16px;bottom:16px;width:min(420px,42vw);max-height:none;border-radius:24px;transform:translateX(30px)}
+}
+/* écrans bas en paysage (téléphone couché, tablette de la camionnette) : toute la hauteur */
+@media (orientation:landscape) and (max-height:560px){
+  .av-panneau{left:auto;top:8px;right:8px;bottom:8px;width:min(440px,55vw);max-height:none;border-radius:20px;transform:translateX(30px)}
+  .av-bouton{width:56px;height:56px;right:14px;bottom:14px}
+}
+.av-tete{display:flex;align-items:center;gap:10px;padding:4px 2px 10px}
+.av-tete b{font-size:17px;flex:1}
+.av-tete button,.av-rond{width:40px;height:40px;border-radius:50%;border:0;background:var(--creux,rgba(0,0,0,.06));cursor:pointer;display:grid;place-items:center;color:inherit;font-size:16px}
+.av-tete button[aria-pressed="true"]{background:color-mix(in srgb,var(--bleu,#0a84ff) 22%,transparent);color:var(--bleu,#0a84ff)}
+.av-fil{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:8px;padding:2px 2px 10px;min-height:120px}
+.av-msg{max-width:88%;padding:10px 13px;border-radius:18px;font-size:15.5px;line-height:1.4;white-space:pre-wrap;word-wrap:break-word}
+.av-msg.moi{align-self:flex-end;background:var(--bleu,#0a84ff);color:#fff;border-bottom-right-radius:6px}
+.av-msg.lui{align-self:flex-start;background:var(--verre-fort,rgba(255,255,255,.85));border-bottom-left-radius:6px}
+.av-msg .av-src{display:block;font-size:11px;opacity:.55;margin-top:4px}
+.av-carte{align-self:stretch;border-radius:18px;padding:12px 14px;background:color-mix(in srgb,var(--vert,#28b257) 12%,var(--verre-fort,#fff));
+  border:1px solid color-mix(in srgb,var(--vert,#28b257) 35%,transparent);font-size:14.5px}
+.av-carte h4{margin:0 0 6px;font-size:15px}
+.av-carte .l{display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px solid var(--ligne,rgba(0,0,0,.07))}
+.av-carte .t{display:flex;justify-content:space-between;font-weight:700;padding-top:6px}
+.av-carte .alerte{color:var(--orange,#ff9500);font-size:13px;margin-top:6px}
+.av-carte .btns{display:flex;gap:8px;margin-top:10px}
+.av-carte .btns button{flex:1;min-height:46px;border-radius:14px;border:0;font-weight:700;font-size:15px;cursor:pointer}
+.av-carte .ok{background:var(--vert,#28b257);color:#fff}.av-carte .ko{background:var(--creux,rgba(0,0,0,.07));color:inherit}
+.av-raccourcis{display:flex;gap:7px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.av-raccourcis::-webkit-scrollbar{display:none}
+.av-raccourcis button{flex:none;border:0;border-radius:999px;padding:9px 13px;font-size:13.5px;font-weight:600;cursor:pointer;
+  background:var(--creux,rgba(0,0,0,.06));color:inherit;min-height:40px}
+.av-saisie{display:flex;gap:8px;align-items:flex-end}
+.av-saisie textarea{flex:1;resize:none;border-radius:16px;border:1px solid var(--ligne,rgba(0,0,0,.12));background:var(--verre-fort,#fff);
+  padding:11px 13px;font:inherit;font-size:16px;line-height:1.35;max-height:120px;min-height:46px;color:inherit}
+.av-saisie .av-micro{width:50px;height:50px;background:var(--bleu,#0a84ff);color:#fff;flex:none}
+.av-saisie .av-micro.ecoute{background:var(--rouge,#ff3b30);animation:av-pulse 1.3s ease-in-out infinite}
+.av-saisie .av-micro svg,.av-bouton svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.av-interim{font-size:13px;color:var(--doux,#666);min-height:18px;padding:0 4px 4px;font-style:italic}
+@media (pointer:coarse){.av-raccourcis button{min-height:44px;padding:10px 15px}}
+@media (prefers-reduced-motion:reduce){.av-bouton,.av-panneau{transition:none}.av-bouton.ecoute,.av-micro.ecoute{animation:none}}
+</style>
+<button class="av-bouton" id="av-bouton" title="Assistant vocal (Alt+A)" aria-label="Parler à l'assistant">
+  <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4M8 21h8"/></svg>
+</button>
+<div class="av-panneau" id="av-panneau" role="dialog" aria-label="Assistant vocal">
+  <div class="av-tete">
+    <b>Assistant</b>
+    <button id="av-voix" aria-pressed="true" title="Réponses lues à voix haute">🔊</button>
+    <button id="av-mains" aria-pressed="false" title="Mains libres : réécoute après chaque réponse">🚐</button>
+    <button id="av-gps" aria-pressed="false" title="Utiliser ma position (devis à proximité)">📍</button>
+    <button id="av-fermer" title="Fermer">✕</button>
+  </div>
+  <div class="av-raccourcis">
+    <button data-av="recap">☀️ Récap du matin</button>
+    <button data-av="proches">📍 Devis près d'ici</button>
+    <button data-av-dire="Lance l'itinéraire de la tournée">🧭 Itinéraire</button>
+    <button data-av-prefixe="Note d'intervention pour ">📝 Note d'intervention</button>
+    <button data-av-prefixe="Ajoute aux commandes : ">📦 Commande</button>
+    <button data-av-dire="Quelles factures sont impayées ?">💶 Impayés</button>
+  </div>
+  <div class="av-fil" id="av-fil" aria-live="polite"></div>
+  <div class="av-interim" id="av-interim"></div>
+  <div class="av-saisie">
+    <textarea id="av-texte" rows="1" placeholder="Parle ou écris…" enterkeyhint="send"></textarea>
+    <button class="av-rond av-micro" id="av-micro" title="Parler" aria-label="Parler">
+      <svg viewBox="0 0 24 24" width="22" height="22"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4M8 21h8"/></svg>
+    </button>
+  </div>
+</div>
+<script>
+/* Assistant vocal. La page fournit le « transport » : envoyer(question) → réponse, confirmer(id), etc.
+   Reconnaissance et synthèse vocales du navigateur (Edge, Chrome, Safari) : rien à installer, rien à payer. */
+window.AssistantVocal = (() => {
+  const $a = s => document.getElementById(s);
+  const RECO = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const pref = (k, d) => { try{ const v = localStorage.getItem("av-"+k); return v===null ? d : v==="1"; }catch(e){ return d; } };
+  const memo = (k, v) => { try{ localStorage.setItem("av-"+k, v?"1":"0"); }catch(e){} };
+  const S = { voix: pref("voix", true), mains: pref("mains", false), gps: pref("gps", false), ecoute: false, occupe: false,
+              reco: null, T: null, session: null, position: null, posT: 0 };
+  try{ S.session = localStorage.getItem("av-session") || (Math.random().toString(36).slice(2,10)); localStorage.setItem("av-session", S.session); }
+  catch(e){ S.session = Math.random().toString(36).slice(2,10); }
+
+  const echapA = t => String(t ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const eur = n => (Number(n)||0).toLocaleString("fr-BE",{style:"currency",currency:"EUR"});
+
+  function ouvrir(){ $a("av-panneau").classList.add("ouvert"); setTimeout(()=>$a("av-texte").focus({preventScroll:true}), 150); }
+  function fermer(){ $a("av-panneau").classList.remove("ouvert"); arreterEcoute(); window.speechSynthesis?.cancel(); }
+  function ajouter(classe, html){ const d = document.createElement("div"); d.className = classe; d.innerHTML = html; $a("av-fil").appendChild(d);
+    $a("av-fil").scrollTop = $a("av-fil").scrollHeight; return d; }
+
+  /* ---------- Voix ---------- */
+  let voixFr = null;
+  function choisirVoix(){
+    const v = window.speechSynthesis?.getVoices() || [];
+    voixFr = v.find(x=>/fr[-_]BE/i.test(x.lang) && /natural|online|neural/i.test(x.name)) || v.find(x=>/fr[-_]FR/i.test(x.lang) && /natural|online|neural|amélie|thomas|denise/i.test(x.name))
+          || v.find(x=>/fr[-_]BE/i.test(x.lang)) || v.find(x=>/^fr/i.test(x.lang)) || null;
+  }
+  if (window.speechSynthesis){ choisirVoix(); speechSynthesis.onvoiceschanged = choisirVoix; }
+  function dire(texte, ensuite){
+    if (!S.voix || !window.speechSynthesis || !texte){ ensuite && ensuite(); return; }
+    speechSynthesis.cancel();
+    // découpage en phrases : Safari coupe les longs textes
+    const morceaux = String(texte).match(/[^.!?;]+[.!?;]?/g) || [texte];
+    morceaux.forEach((m, i) => { const u = new SpeechSynthesisUtterance(m.trim()); u.lang = voixFr?.lang || "fr-FR"; if (voixFr) u.voice = voixFr;
+      u.rate = 1.05; if (i === morceaux.length-1) u.onend = () => ensuite && ensuite(); speechSynthesis.speak(u); });
+  }
+
+  /* ---------- Écoute ---------- */
+  function ecouter(){
+    if (S.occupe) return;
+    window.speechSynthesis?.cancel();
+    if (!RECO){
+      $a("av-interim").textContent = "Dictée non disponible ici : touche le micro du clavier pour dicter.";
+      $a("av-texte").focus(); return;
+    }
+    if (S.ecoute){ arreterEcoute(); return; }
+    const r = new RECO(); S.reco = r;
+    r.lang = "fr-BE"; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
+    let final = "";
+    r.onresult = e => { let inter = ""; for (const res of e.results){ if (res.isFinal) final = res[0].transcript; else inter += res[0].transcript; }
+      $a("av-interim").textContent = inter || final; };
+    r.onerror = e => { $a("av-interim").textContent = e.error === "not-allowed" ? "Micro refusé : autorise-le dans le navigateur." :
+      e.error === "no-speech" ? "Je n'ai rien entendu." : "Micro : " + e.error; };
+    r.onend = () => { S.ecoute = false; etatMicro(); const t = (final||"").trim(); $a("av-interim").textContent = ""; if (t) envoyer(t); };
+    try{ r.start(); S.ecoute = true; etatMicro(); }catch(e){ S.ecoute = false; etatMicro(); }
+  }
+  function arreterEcoute(){ try{ S.reco?.stop(); }catch(e){} S.ecoute = false; etatMicro(); }
+  function etatMicro(){ $a("av-micro").classList.toggle("ecoute", S.ecoute); $a("av-bouton").classList.toggle("ecoute", S.ecoute);
+    $a("av-bouton").classList.toggle("pense", S.occupe); }
+
+  /* ---------- Position (seulement si Lucas l'a autorisé) ---------- */
+  function position(){
+    return new Promise(ok => {
+      if (!S.gps || !navigator.geolocation) return ok(null);
+      if (S.position && Date.now() - S.posT < 120000) return ok(S.position);
+      navigator.geolocation.getCurrentPosition(p => { S.position = {lat:p.coords.latitude, lon:p.coords.longitude}; S.posT = Date.now(); ok(S.position); },
+        () => ok(null), {enableHighAccuracy:false, timeout:6000, maximumAge:120000});
+    });
+  }
+
+  /* ---------- Échanges ---------- */
+  async function envoyer(texte, action="demander"){
+    texte = String(texte||"").trim();
+    if (!texte && action==="demander") return;
+    if (S.occupe) return;
+    ouvrir();
+    if (texte) ajouter("av-msg moi", echapA(texte));
+    $a("av-texte").value = ""; S.occupe = true; etatMicro();
+    const attente = ajouter("av-msg lui", "…");
+    let r;
+    try{ r = await S.T.envoyer({texte, action, session:S.session, position: await position()}); }
+    catch(e){ r = {texte: e.message || "Pas de réponse."}; }
+    S.occupe = false; etatMicro();
+    attente.innerHTML = echapA(r.texte || "") + (r.source && r.source!=="code" ? `<span class="av-src">${echapA(r.source)}</span>` : "");
+    if (r.liste && r.liste.length) attente.innerHTML += "<br>" + r.liste.slice(0,6).map(d=>`• ${echapA(d.client)} – ${d.km} km – ${eur(d.total)}`).join("<br>");
+    (r.actions||[]).forEach(a => { try{ S.T.agir(a); }catch(e){} });
+    if (r.confirmation) carte(r.confirmation);
+    dire(r.texte, () => { if (S.mains && $a("av-panneau").classList.contains("ouvert")) setTimeout(ecouter, 350); });
+  }
+  function carte(c){
+    const t = c.totaux || {};
+    const d = ajouter("av-carte", `<h4>${c.type_doc==="facture"?"Facture":"Devis"} – ${echapA(c.client)}</h4>
+      ${(c.resume||"").split("\n").filter(x=>x.startsWith("- ")).map(x=>`<div class="l"><span>${echapA(x.slice(2))}</span></div>`).join("")}
+      <div class="t"><span>Total HTVA</span><span>${eur(t.ht)}</span></div>
+      <div class="t"><span>TVA</span><span>${eur(t.tva)}</span></div>
+      <div class="t"><span>Total TVAC</span><span>${eur(t.ttc)}</span></div>
+      ${(c.alertes||[]).map(a=>`<div class="alerte">⚠️ ${echapA(a)}</div>`).join("")}
+      <div class="btns"><button class="ko">Annuler</button><button class="ok">Créer le brouillon enFact</button></div>`);
+    d.querySelector(".ok").onclick = async () => { d.querySelector(".btns").remove(); await envoyer("", "confirmer:" + c.id); };
+    d.querySelector(".ko").onclick = async () => { d.querySelector(".btns").remove(); try{ await S.T.abandonner(c.id); }catch(e){} ajouter("av-msg lui", "Brouillon abandonné."); };
+  }
+
+  function init(transport){
+    S.T = transport;
+    const bascule = (id, k) => { const b = $a(id); b.setAttribute("aria-pressed", S[k]); b.onclick = () => { S[k] = !S[k]; memo(k, S[k]); b.setAttribute("aria-pressed", S[k]);
+      if (k==="voix" && !S[k]) speechSynthesis?.cancel(); if (k==="gps" && S[k]) position(); }; };
+    bascule("av-voix","voix"); bascule("av-mains","mains"); bascule("av-gps","gps");
+    if (transport.sansGps) $a("av-gps").style.display = "none";
+    $a("av-bouton").onclick = () => { const o = $a("av-panneau").classList.contains("ouvert"); if (!o) ouvrir(); ecouter(); };
+    $a("av-fermer").onclick = fermer;
+    $a("av-micro").onclick = ecouter;
+    $a("av-texte").addEventListener("keydown", e => { if (e.key==="Enter" && !e.shiftKey){ e.preventDefault(); envoyer($a("av-texte").value); } });
+    document.querySelectorAll("[data-av]").forEach(b => b.onclick = () => envoyer("", b.dataset.av === "recap" ? "recap" : "devis_proches"));
+    document.querySelectorAll("[data-av-dire]").forEach(b => b.onclick = () => envoyer(b.dataset.avDire));
+    document.querySelectorAll("[data-av-prefixe]").forEach(b => b.onclick = () => { $a("av-texte").value = b.dataset.avPrefixe; $a("av-texte").focus(); });
+    document.addEventListener("keydown", e => { if (e.altKey && (e.key==="a"||e.key==="A")){ e.preventDefault(); ouvrir(); ecouter(); }
+      if (e.key==="Escape" && $a("av-panneau").classList.contains("ouvert")) fermer(); });
+    if (!RECO) $a("av-micro").title = "Dictée : utilise le micro du clavier";
+  }
+  return { init, envoyer, dire, ouvrir };
+})();
+</script>
+<!-- ================== fin de l'assistant vocal ================== -->
+
+<script>
+/* Assistant : la question passe par Supabase (table tableau_assistant) ; le PC, qui garde les clés d'IA, répond. */
+const AV_TUILES = {impayees:"encaisser", encaisser:"encaisser", dernieres:"encaisser", brouillons:"encaisser",
+  sans_reponse:"devis", acceptes:"devis", memo_devis:"devis", itineraire:"tournee", planning:"planning",
+  memo_facturation:"facturer", memo_commandes:"chlore", memo_saison:"chlore", stock:"chlore", meteo:"meteo",
+  messages:"mails", point_matin:"point", presse:"presse", scripts:"robots", seo:"robots", pub:"robots",
+  courses:"courses", poubelles:"poubelles", agenda:"agenda", electricite:"electricite", eau:"eau", thermostat:"thermostat"};
+const avPause = ms => new Promise(r => setTimeout(r, ms));
+async function avQuestion(ligne){
+  const appareil = (navigator.userAgent.match(/iPad|iPhone|Android/) || ["web"])[0];
+  const {data, error} = await sb.from("tableau_assistant").insert({...ligne, appareil}).select("id").single();
+  if (error) throw new Error(/does not exist|PGRST20|42P01/.test((error.code||"")+" "+(error.message||""))
+    ? "L'assistant n'est pas encore activé en ligne (table Supabase à créer, voir « À faire au retour »)."
+    : (error.message || "Envoi impossible."));
+  for (let i = 0; i < 100; i++){
+    await avPause(i < 10 ? 700 : 1200);
+    const {data: l} = await sb.from("tableau_assistant").select("statut,reponse").eq("id", data.id).single();
+    if (l && (l.statut === "fini" || l.statut === "erreur")){
+      sb.from("tableau_assistant").delete().eq("id", data.id).then(()=>{});
+      return l.reponse || {texte: "Pas de réponse."};
+    }
+  }
+  return {texte: "Le PC ne répond pas : il est peut-être éteint, ou le tableau de bord n'y est pas ouvert."};
+}
+/* bouton de l'assistant visible seulement une fois connecté */
+const avVisible = () => { const b = document.getElementById("av-bouton"); if (b) b.style.display = document.getElementById("ecran-connexion").classList.contains("cache") ? "" : "none"; };
+new MutationObserver(avVisible).observe(document.getElementById("ecran-connexion"), {attributes: true, attributeFilter: ["class"]});
+avVisible();
+AssistantVocal.init({
+  async envoyer({texte, action, session, position}){
+    if (action.startsWith("confirmer:")) return avQuestion({session, action: "confirmer", piece: action.slice(10), texte: ""});
+    return avQuestion({session, action, texte: texte || "", position: position || null});
+  },
+  abandonner: id => avQuestion({session: localStorage.getItem("av-session") || "x", action: "demander", texte: "non"}),
+  agir(a){
+    if (a.type === "ouvrir") window.open(a.url, "_blank", "noopener");
+    else if (a.type === "tuile" && AV_TUILES[a.id]) ouvrirTuile(AV_TUILES[a.id]);
+    else if (a.type === "rafraichir") charger();
+  }
+});
 </script>
 </body>
 </html>
