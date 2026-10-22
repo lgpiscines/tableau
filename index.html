@@ -1211,5 +1211,52 @@ AssistantVocal.init({
 })();
 </script>
 <!-- ================== fin Photo → camionnette ================== -->
+<!-- ================== Fiches clients (même outil que le PC et la tablette) + appel demandé par la tablette ================== -->
+<script src="fiches-clients.js"></script>
+<style>
+.ap-bandeau{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 10px);z-index:95;display:none;align-items:center;gap:12px;padding:14px 16px;border-radius:20px;
+  background:#34c759;color:#fff;box-shadow:0 12px 34px rgba(0,0,0,.3)}
+.ap-bandeau.vu{display:flex}
+.ap-bandeau div{flex:1;min-width:0}.ap-bandeau b{display:block;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ap-bandeau small{font-size:14px;opacity:.9}
+.ap-bandeau a{flex:none;background:#fff;color:#0a7a3a;font-weight:800;font-size:17px;padding:12px 18px;border-radius:14px;text-decoration:none}
+.ap-bandeau button{flex:none;border:0;background:rgba(255,255,255,.25);color:#fff;width:40px;height:40px;border-radius:12px;font-size:18px}
+</style>
+<div class="ap-bandeau" id="ap-bandeau"><div><b id="ap-nom"></b><small id="ap-tel"></small></div><a id="ap-lien" href="#">📞 Appeler</a><button id="ap-fermer" aria-label="Fermer">✕</button></div>
+<script>
+(() => {
+  const g = id => document.getElementById(id);
+  // bouton « Clients » à côté d'Actualiser
+  const b = document.createElement("button");
+  b.className = "rond"; b.id = "btn-clients"; b.title = "Fiches clients"; b.textContent = "👤";
+  g("rafraichir").before(b);
+  b.onclick = () => FichesClients.ouvrir();
+  FichesClients.init({
+    appareil: "téléphone",
+    lister: async () => { const r = await sb.from("tableau_instantane").select("donnees").like("cle", "client-%"); if (r.error) throw r.error; return (r.data || []).map(x => x.donnees).filter(x => x && x.id); },
+    enregistrer: async f => { const u = (await sb.auth.getUser()).data.user;
+      const r = await sb.from("tableau_instantane").upsert({user_id: u.id, cle: "client-" + f.id, donnees: f, maj: new Date().toISOString()}, {onConflict: "user_id,cle"});
+      if (r.error) throw r.error; return f; },
+    appeler: f => { location.href = "tel:" + String(f.telephone || "").replace(/[^\d+]/g, ""); },
+  });
+  // Appel demandé depuis la tablette de la camionnette (la notification iPhone ne contient ni nom ni numéro)
+  async function verifierAppel() {
+    try {
+      const r = await sb.from("tableau_instantane").select("donnees").eq("cle", "appel-demande").maybeSingle();
+      const a = r.data?.donnees; if (!a?.telephone) return;
+      if (Date.now() - new Date(a.quand).getTime() > 15 * 60e3) return;
+      g("ap-nom").textContent = "Appeler " + a.nom; g("ap-tel").textContent = a.telephone + " · demandé depuis la camionnette";
+      g("ap-lien").href = "tel:" + a.telephone.replace(/[^\d+]/g, "");
+      g("ap-bandeau").classList.add("vu");
+    } catch (e) {}
+  }
+  const effacer = () => { g("ap-bandeau").classList.remove("vu"); sb.from("tableau_instantane").delete().eq("cle", "appel-demande").then(() => {}); };
+  g("ap-lien").addEventListener("click", () => setTimeout(effacer, 500));
+  g("ap-fermer").onclick = effacer;
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) verifierAppel(); });
+  setTimeout(verifierAppel, 1500);
+  if (new URLSearchParams(location.search).has("appel")) setTimeout(verifierAppel, 600);
+})();
+</script>
+<!-- ================== fin Fiches clients ================== -->
 </body>
 </html>
