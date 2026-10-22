@@ -1140,5 +1140,76 @@ AssistantVocal.init({
   }
 });
 </script>
+<!-- ================== Photo → camionnette (envoie une photo du téléphone vers la tablette) ================== -->
+<style>
+.ph-bouton{position:fixed;left:calc(env(safe-area-inset-left) + 20px);bottom:calc(env(safe-area-inset-bottom) + 20px);z-index:60;width:58px;height:58px;border-radius:50%;border:0;
+  display:grid;place-items:center;color:#fff;background:linear-gradient(150deg,#34c759,#0a9f55);box-shadow:0 10px 26px rgba(10,159,85,.4);cursor:pointer}
+.ph-bouton svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ph-voile{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center}
+.ph-voile.vu{display:flex}
+.ph-feuille{width:min(560px,100%);max-height:92vh;overflow-y:auto;background:var(--feuille,#fff);color:var(--texte,#111);border-radius:24px 24px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom) + 16px);display:flex;flex-direction:column;gap:12px}
+.ph-feuille h3{margin:0;font-size:18px}
+.ph-apercu{width:100%;max-height:40vh;object-fit:contain;border-radius:14px;background:rgba(0,0,0,.06)}
+.ph-clients{display:flex;flex-wrap:wrap;gap:8px}
+.ph-clients button{border:0;border-radius:999px;padding:9px 14px;font-size:15px;font-weight:600;background:var(--creux,rgba(0,0,0,.07));color:inherit;cursor:pointer}
+.ph-clients button.actif{background:#34c759;color:#fff}
+.ph-feuille input{border:1px solid var(--ligne,rgba(0,0,0,.15));border-radius:12px;padding:12px;font:inherit;font-size:16px;background:var(--verre-fort,#fff);color:inherit}
+.ph-actions{display:flex;gap:10px}
+.ph-actions button{flex:1;min-height:50px;border:0;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer}
+.ph-envoyer{background:#34c759;color:#fff}.ph-annuler{background:var(--creux,rgba(0,0,0,.07));color:inherit}
+</style>
+<button class="ph-bouton" id="ph-bouton" title="Envoyer une photo à la tablette de la camionnette" aria-label="Photo vers la camionnette" style="display:none">
+  <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+</button>
+<input type="file" id="ph-fichier" accept="image/*" hidden>
+<div class="ph-voile" id="ph-voile">
+  <div class="ph-feuille">
+    <h3>Photo pour la camionnette</h3>
+    <img class="ph-apercu" id="ph-apercu" alt="">
+    <div><b>Pour quel client ?</b></div>
+    <div class="ph-clients" id="ph-clients"></div>
+    <input id="ph-client" placeholder="Nom du client" autocomplete="off">
+    <input id="ph-note" placeholder="Note (facultatif) : pièce à changer, avant/après…" autocomplete="off">
+    <div class="ph-actions"><button class="ph-annuler" id="ph-annuler">Annuler</button><button class="ph-envoyer" id="ph-envoyer">Envoyer</button></div>
+  </div>
+</div>
+<script>
+/* Envoi d'une photo vers la tablette : réduite à 1600 px (JPEG) puis déposée dans Supabase (ligne « photo-… » de tableau_instantane, visible seulement par le compte de Lucas). */
+(() => {
+  const g = id => document.getElementById(id);
+  let image = "";
+  const visible = () => { g("ph-bouton").style.display = document.getElementById("ecran-connexion").classList.contains("cache") ? "" : "none"; };
+  new MutationObserver(visible).observe(document.getElementById("ecran-connexion"), {attributes: true, attributeFilter: ["class"]}); visible();
+  g("ph-bouton").onclick = () => g("ph-fichier").click();
+  g("ph-fichier").onchange = async () => {
+    const f = g("ph-fichier").files[0]; g("ph-fichier").value = ""; if (!f) return;
+    try {
+      const bmp = await createImageBitmap(f);
+      const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height)), c = document.createElement("canvas");
+      c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+      c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+      image = c.toDataURL("image/jpeg", .78);
+    } catch (e) { toast("Photo illisible"); return; }
+    g("ph-apercu").src = image; g("ph-client").value = ""; g("ph-note").value = "";
+    // clients du jour et de demain, pour choisir d'un appui
+    const noms = []; for (let k = 0; k < 2; k++) { const d = new Date(); d.setDate(d.getDate() + k); chantiersDu(iso(d)).forEach(c => { if (c.nom && !noms.includes(c.nom)) noms.push(c.nom); }); }
+    g("ph-clients").replaceChildren(...noms.map(n => { const b = document.createElement("button"); b.textContent = n;
+      b.onclick = () => { g("ph-client").value = n; [...g("ph-clients").children].forEach(x => x.classList.toggle("actif", x === b)); }; return b; }));
+    g("ph-voile").classList.add("vu");
+  };
+  g("ph-annuler").onclick = () => g("ph-voile").classList.remove("vu");
+  g("ph-envoyer").onclick = async () => {
+    const b = g("ph-envoyer"); b.disabled = true; b.textContent = "Envoi…";
+    try {
+      const u = (await sb.auth.getUser()).data.user, quand = new Date().toISOString();
+      const r = await sb.from("tableau_instantane").insert({user_id: u.id, cle: "photo-" + Date.now(), donnees: {client: g("ph-client").value.trim(), note: g("ph-note").value.trim(), image, quand}, maj: quand});
+      if (r.error) throw r.error;
+      g("ph-voile").classList.remove("vu"); toast("Photo envoyée à la camionnette ✓");
+    } catch (e) { toast("Envoi impossible : " + (e.message || e)); }
+    b.disabled = false; b.textContent = "Envoyer";
+  };
+})();
+</script>
+<!-- ================== fin Photo → camionnette ================== -->
 </body>
 </html>
