@@ -1279,9 +1279,20 @@ AssistantVocal.init({
   const PHASE = v => { v = String(v || "").toLowerCase();
     if (/profond|deep/.test(v)) return "profond"; if (/paradox|rem/.test(v)) return "paradoxal"; if (/essentiel|core|l[ée]ger/.test(v)) return "essentiel";
     if (/[ée]veill|awake/.test(v)) return "eveille"; if (/au lit|in ?bed|inbed/.test(v)) return "lit"; if (/endormi|asleep|sommeil/.test(v)) return "endormi"; return ""; };
+  // dates telles que l'iPhone les écrit (« 22 oct. 2026 à 23:02 », « 22/10/2026 23:02 ») ou au format ISO
+  const MOIS_FR = { janv: 0, jan: 0, fevr: 1, fev: 1, feb: 1, mars: 2, mar: 2, avr: 3, apr: 3, mai: 4, may: 4, juin: 5, jun: 5, juil: 6, jul: 6, aout: 7, aug: 7, sept: 8, sep: 8, oct: 9, nov: 10, dec: 11 };
+  function dateFr(s) {
+    s = String(s || "").trim(); const iso = new Date(s); if (/^\d{4}-\d{2}-\d{2}/.test(s) && !isNaN(iso)) return iso;
+    const t = s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    let m = t.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4}).*?(\d{1,2})[:h](\d{2})/);
+    if (m) return new Date(+(m[3].length === 2 ? "20" + m[3] : m[3]), +m[2] - 1, +m[1], +m[4], +m[5]);
+    m = t.match(/(\d{1,2})\s+([a-z]+)\.?\s+(\d{4}).*?(\d{1,2})[:h](\d{2})/);
+    if (m) { const k = Object.keys(MOIS_FR).find(x => m[2].startsWith(x)); if (k !== undefined) return new Date(+m[3], MOIS_FR[k], +m[1], +m[4], +m[5]); }
+    return iso;
+  }
   function nuit(texte) {
     const seg = String(texte || "").split(";").map(s => s.split("|")).filter(x => x.length >= 3)
-      .map(([v, d, f]) => ({ p: PHASE(v), d: new Date(d.trim()), f: new Date(f.trim()) })).filter(x => x.p && !isNaN(x.d) && !isNaN(x.f) && x.f > x.d)
+      .map(([v, d, f]) => ({ p: PHASE(v), d: dateFr(d), f: dateFr(f) })).filter(x => x.p && !isNaN(x.d) && !isNaN(x.f) && x.f > x.d)
       .sort((a, b) => a.d - b.d);
     if (!seg.length) return null;
     // dernière nuit : bloc continu (trous de moins de 2 h) qui se termine le plus tard
