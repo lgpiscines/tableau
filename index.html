@@ -1317,6 +1317,8 @@ AssistantVocal.init({
     try {
       const { data: ses } = await sb.auth.getSession();
       if (!ses.session) { g("sa-titre").textContent = "Connecte-toi d'abord"; g("sa-chiffre").textContent = "🔒"; g("sa-detail").textContent = "Ouvre cette page dans Safari et connecte-toi une fois, puis relance le raccourci."; g("sa-recu").classList.add("vu"); return; }
+      // diagnostic temporaire : ce que le raccourci envoie réellement (pour régler la lecture)
+      await sb.from("tableau_instantane").upsert({ user_id: ses.session.user.id, cle: "sante-debug", donnees: { brut: String(q.get("sommeil") || "").slice(0, 4000), params: location.search.slice(0, 600), quand: new Date().toISOString() }, maj: new Date().toISOString() }, { onConflict: "user_id,cle" });
       const r = await sb.from("tableau_instantane").select("donnees").eq("cle", "sante-jours").maybeSingle();
       const jours = r.data?.donnees || {};
       if (s) { const j = isoLocal(new Date(s.lever)); jours[j] = { ...(jours[j] || {}), sommeil: s }; }
