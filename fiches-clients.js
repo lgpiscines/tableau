@@ -92,7 +92,7 @@ window.FichesClients = (() => {
     $f("fc-corps").innerHTML = `<div class="fc-actions">
         ${f.telephone ? `<button class="fc-btn fort" data-appel="${echapF(f.id)}">📞 Appeler</button>` : ""}
         <button class="fc-btn" data-fc="modifier">✎ Modifier</button></div>`
-      + champ("Adresse", echapF([f.adresse, f.localite].filter(Boolean).join(" — ")))
+      + champ("Adresse", echapF([f.adresse, f.localite && !norme(f.adresse).includes(norme(f.localite)) ? f.localite : ""].filter(Boolean).join(" — ")))
       + champ("Téléphone", f.telephone ? `<a href="${telLien(f.telephone)}">${echapF(f.telephone)}</a>` : "")
       + champ("E-mail", f.email ? `<a href="mailto:${echapF(f.email)}">${echapF(f.email)}</a>` : "")
       + champ("Notes", echapF(f.notes || ""))
