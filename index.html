@@ -1258,5 +1258,74 @@ AssistantVocal.init({
 })();
 </script>
 <!-- ================== fin Fiches clients ================== -->
+<!-- ================== Santé : réception des chiffres envoyés par le raccourci iPhone ================== -->
+<style>
+.sa-recu{position:fixed;inset:0;z-index:96;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:20px}
+.sa-recu.vu{display:flex}
+.sa-recu div{background:#16171d;color:#fff;border-radius:24px;padding:24px;max-width:420px;width:100%;text-align:center}
+.sa-recu b{display:block;font-size:46px;margin:6px 0}.sa-recu p{margin:6px 0;opacity:.85}
+.sa-recu button{margin-top:14px;border:0;border-radius:14px;padding:12px 22px;font-size:16px;font-weight:700;background:#5856d6;color:#fff}
+</style>
+<div class="sa-recu" id="sa-recu"><div><div id="sa-titre">Santé envoyée ✓</div><b id="sa-chiffre"></b><p id="sa-detail"></p><button id="sa-ok">OK</button></div></div>
+<script>
+/* Le raccourci « Santé → tableau de bord » ouvre cette page avec ?sante=1&sommeil=…&pas=…&km=…&kcal=…&exo=…
+   - sommeil : segments « valeur|début|fin » séparés par « ; » (échantillons « Analyse du sommeil » de l'app Santé)
+   Le score de sommeil est calculé ici (durée, sommeil profond et paradoxal, réveils), puis tout est rangé dans la ligne Supabase
+   « sante-jours » (visible seulement par le compte de Lucas) que la tuile Santé du PC affiche. */
+(() => {
+  const q = new URLSearchParams(location.search); if (!q.has("sante")) return;
+  const g = id => document.getElementById(id);
+  const nombre = v => { const n = parseFloat(String(v || "").replace(",", ".").replace(/[^\d.\-]/g, "")); return isFinite(n) ? n : 0; };
+  const PHASE = v => { v = String(v || "").toLowerCase();
+    if (/profond|deep/.test(v)) return "profond"; if (/paradox|rem/.test(v)) return "paradoxal"; if (/essentiel|core|l[ée]ger/.test(v)) return "essentiel";
+    if (/[ée]veill|awake/.test(v)) return "eveille"; if (/au lit|in ?bed|inbed/.test(v)) return "lit"; if (/endormi|asleep|sommeil/.test(v)) return "endormi"; return ""; };
+  function nuit(texte) {
+    const seg = String(texte || "").split(";").map(s => s.split("|")).filter(x => x.length >= 3)
+      .map(([v, d, f]) => ({ p: PHASE(v), d: new Date(d.trim()), f: new Date(f.trim()) })).filter(x => x.p && !isNaN(x.d) && !isNaN(x.f) && x.f > x.d)
+      .sort((a, b) => a.d - b.d);
+    if (!seg.length) return null;
+    // dernière nuit : bloc continu (trous de moins de 2 h) qui se termine le plus tard
+    const blocs = []; for (const s of seg) { const b = blocs[blocs.length - 1]; if (b && s.d - b.fin < 2 * 3600e3) { b.l.push(s); b.fin = new Date(Math.max(b.fin, s.f)); } else blocs.push({ l: [s], fin: s.f }); }
+    const b = blocs[blocs.length - 1].l, min = x => (x.f - x.d) / 60000;
+    const tot = p => Math.round(b.filter(x => x.p === p).reduce((s, x) => s + min(x), 0));
+    let profond = tot("profond"), paradoxal = tot("paradoxal"), essentiel = tot("essentiel"), eveille = tot("eveille");
+    let endormi = profond + paradoxal + essentiel; if (!endormi) endormi = tot("endormi");
+    if (!endormi) return null;
+    // score sur 100 : durée (50), profond (20), paradoxal (20), réveils (10)
+    const dur = Math.min(1, endormi / 480) * 50;
+    const rp = endormi ? profond / endormi : 0, rr = endormi ? paradoxal / endormi : 0;
+    const cible = (r, a, z) => r >= a && r <= z ? 1 : r < a ? r / a : Math.max(0, 1 - (r - z) / z);
+    const sc = profond + paradoxal ? cible(rp, .13, .23) * 20 + cible(rr, .18, .25) * 20 : 28;
+    const rev = Math.max(0, 10 - eveille / 3);
+    return { score: Math.round(dur + sc + rev), duree_min: endormi, profond, paradoxal, essentiel, eveille,
+      coucher: b[0].d.toISOString(), lever: new Date(Math.max(...b.map(x => x.f))).toISOString() };
+  }
+  const isoLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  async function enregistrer() {
+    const s = nuit(q.get("sommeil")), a = { pas: Math.round(nombre(q.get("pas"))), km: Math.round(nombre(q.get("km")) * 10) / 10, kcal: Math.round(nombre(q.get("kcal"))), exo: Math.round(nombre(q.get("exo"))), maj: new Date().toISOString() };
+    try {
+      const { data: ses } = await sb.auth.getSession();
+      if (!ses.session) { g("sa-titre").textContent = "Connecte-toi d'abord"; g("sa-chiffre").textContent = "🔒"; g("sa-detail").textContent = "Ouvre cette page dans Safari et connecte-toi une fois, puis relance le raccourci."; g("sa-recu").classList.add("vu"); return; }
+      const r = await sb.from("tableau_instantane").select("donnees").eq("cle", "sante-jours").maybeSingle();
+      const jours = r.data?.donnees || {};
+      if (s) { const j = isoLocal(new Date(s.lever)); jours[j] = { ...(jours[j] || {}), sommeil: s }; }
+      if (a.pas || a.km || a.kcal || a.exo) { const j = isoLocal(new Date()); jours[j] = { ...(jours[j] || {}), activite: a }; }
+      // on garde un an d'historique
+      const limite = isoLocal(new Date(Date.now() - 366 * 864e5)); Object.keys(jours).forEach(k => { if (k < limite) delete jours[k]; });
+      const w = await sb.from("tableau_instantane").upsert({ user_id: ses.session.user.id, cle: "sante-jours", donnees: jours, maj: new Date().toISOString() }, { onConflict: "user_id,cle" });
+      if (w.error) throw w.error;
+      const h = m => `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}`;
+      g("sa-chiffre").textContent = s ? s.score : (a.pas ? a.pas.toLocaleString("fr-BE") : "✓");
+      g("sa-detail").textContent = s ? `Sommeil ${h(s.duree_min)} · profond ${h(s.profond)} · paradoxal ${h(s.paradoxal)}` : `${a.pas.toLocaleString("fr-BE")} pas · ${a.km} km · ${a.kcal} kcal · ${a.exo} min d'exercice`;
+    } catch (e) { g("sa-titre").textContent = "Envoi impossible"; g("sa-detail").textContent = e.message || String(e); }
+    g("sa-recu").classList.add("vu");
+    history.replaceState(null, "", location.pathname);
+    setTimeout(() => g("sa-recu").classList.remove("vu"), 6000);
+  }
+  g("sa-ok").onclick = () => g("sa-recu").classList.remove("vu");
+  setTimeout(enregistrer, 400);
+})();
+</script>
+<!-- ================== fin Santé ================== -->
 </body>
 </html>
